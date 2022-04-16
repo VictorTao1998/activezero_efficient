@@ -1,0 +1,11 @@
+.idea/
+*~
+/CMakeLists.txt
+.vscode/
+__pycache__
+
+.cache
+
+# custom ops
+build/
+*.so
