@@ -21,6 +21,11 @@ def build_dataset(cfg, mode, domain):
     if not dataset_cfg.SPLIT_FILE:
         return None
 
+    if mode == "train":
+        data_aug_cfg = cfg.DATA_AUG
+    else:
+        data_aug_cfg = None
+
     dataset = MessyTableDataset(
         mode=mode,
         domain=domain,
@@ -35,6 +40,7 @@ def build_dataset(cfg, mode, domain):
         right_name=dataset_cfg.RIGHT_NAME,
         left_pattern_name=dataset_cfg.LEFT_PATTERN_NAME,
         right_pattern_name=dataset_cfg.RIGHT_PATTERN_NAME,
+        data_aug_cfg=data_aug_cfg
     )
 
     return dataset

@@ -108,6 +108,20 @@ _C.DATA.TEST.REAL.LEFT_NAME = ""
 _C.DATA.TEST.REAL.RIGHT_NAME = ""
 _C.DATA.TEST.REAL.LEFT_PATTERN_NAME = ""
 _C.DATA.TEST.REAL.RIGHT_PATTERN_NAME = ""
+
+
+# data augmentation
+_C.DATA_AUG = CN()
+_C.DATA_AUG.COLOR_JITTER = True
+_C.DATA_AUG.GAUSSIAN_BLUR = True
+_C.DATA_AUG.GAUSSIAN_MIN = 0.1
+_C.DATA_AUG.GAUSSIAN_MAX = 2.0
+_C.DATA_AUG.GAUSSIAN_KERNEL = 9
+_C.DATA_AUG.BRIGHT_MIN = 0.4
+_C.DATA_AUG.BRIGHT_MAX = 1.4
+_C.DATA_AUG.CONTRAST_MIN = 0.8
+_C.DATA_AUG.CONTRAST_MAX = 1.2
+
 # ---------------------------------------------------------------------------- #
 # Model
 # ---------------------------------------------------------------------------- #

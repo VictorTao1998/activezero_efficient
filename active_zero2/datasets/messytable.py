@@ -11,6 +11,7 @@ from torch.utils.data import Dataset
 from tqdm import tqdm
 
 from active_zero2.utils.io import load_pickle
+from active_zero2.datasets.data_augmentation import data_augmentation
 
 
 class MessyTableDataset(Dataset):
@@ -29,6 +30,7 @@ class MessyTableDataset(Dataset):
         right_name: str,
         left_pattern_name: str = "",
         right_pattern_name: str = "",
+        data_aug_cfg=None,
     ):
         self.mode = mode
 
@@ -48,6 +50,7 @@ class MessyTableDataset(Dataset):
             left_pattern_name,
             right_pattern_name,
         )
+        self.data_aug = data_augmentation(data_aug_cfg)
 
         self.img_dirs = self._gen_path_list()
 
@@ -139,8 +142,8 @@ class MessyTableDataset(Dataset):
         if self.normal_name:
             img_normal_l = crop(img_normal_l)
 
-        data_dict["img_l"] = torch.from_numpy(img_l).float().unsqueeze(0)
-        data_dict["img_r"] = torch.from_numpy(img_r).float().unsqueeze(0)
+        data_dict["img_l"] = self.data_aug(img_l).float()
+        data_dict["img_r"] = self.data_aug(img_r).float()
         if self.depth_name and self.meta_name:
             data_dict["img_deth_l"] = torch.from_numpy(img_depth_l).float().unsqueeze(0)
             data_dict["img_disp_l"] = torch.from_numpy(img_disp_l).float().unsqueeze(0)

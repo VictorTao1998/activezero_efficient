@@ -138,7 +138,7 @@ class PSMNet(nn.Module):
 
         # Cost Volume
         [bs, feature_size, H, W] = refimg_feature.size()
-        cost = torch.FloatTensor(bs, feature_size * 2, self.maxdisp // 4, H, W).zero_().cuda()
+        cost = torch.FloatTensor(bs, feature_size * 2, self.maxdisp // 4, H, W).zero_().to(refimg_feature.device)
 
         for i in range(self.maxdisp // 4):
             if i > 0:
