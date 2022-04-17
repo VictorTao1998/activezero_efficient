@@ -16,6 +16,7 @@ import torch
 import torch.backends.cudnn as cudnn
 import torch.distributed as dist
 from torch.utils.data import DataLoader, DistributedSampler
+from torch.utils.data.sampler import BatchSampler, RandomSampler
 from torch.utils.tensorboard import SummaryWriter
 
 from active_zero2.config import cfg
@@ -28,7 +29,9 @@ from active_zero2.utils.metric_logger import MetricLogger
 from active_zero2.utils.reduce import (AverageMeterDict, make_nograd_func,
                                        reduce_scalar_outputs, set_random_seed,
                                        synchronize, tensor2float, tensor2numpy)
+from active_zero2.utils.sampler import IterationBasedBatchSampler
 from active_zero2.utils.solver import build_lr_scheduler, build_optimizer
+from active_zero2.utils.torch_utils import worker_init_fn
 
 
 def parse_args():
@@ -139,7 +142,6 @@ if __name__ == "__main__":
     # Build dataloader
     # Reset the random seed again in case the initialization of models changes the random state.
     set_random_seed(cfg.RNG_SEED)
-    # Obtain dataloader
     train_sim_dataset = build_dataset(cfg, mode="train", domain="sim")
     train_real_dataset = build_dataset(cfg, mode="train", domain="real")
     val_sim_dataset = build_dataset(cfg, mode="val", domain="sim")
@@ -148,6 +150,9 @@ if __name__ == "__main__":
         if train_sim_dataset:
             train_sim_sampler = DistributedSampler(
                 train_sim_dataset, num_replicas=dist.get_world_size(), rank=dist.get_rank()
+            )
+            train_sim_sampler = IterationBasedBatchSampler(
+                train_sim_sampler, num_iterations=cfg.TRAIN.MAX_ITER, start_iter=start_iter
             )
             train_sim_loader = iter(
                 DataLoader(
@@ -166,6 +171,9 @@ if __name__ == "__main__":
             train_real_sampler = DistributedSampler(
                 train_real_dataset, num_replicas=dist.get_world_size(), rank=dist.get_rank()
             )
+            train_real_sampler = IterationBasedBatchSampler(
+                train_real_sampler, num_iterations=cfg.TRAIN.MAX_ITER, start_iter=start_iter
+            )
             train_real_loader = iter(
                 DataLoader(
                     train_real_dataset,
@@ -183,15 +191,13 @@ if __name__ == "__main__":
             val_sim_sampler = DistributedSampler(
                 val_sim_dataset, num_replicas=dist.get_world_size(), rank=dist.get_rank(), shuffle=False
             )
-            val_sim_loader = iter(
-                DataLoader(
-                    val_sim_dataset,
-                    batch_size=cfg.VAL.BATCH_SIZE,
-                    sampler=val_sim_sampler,
-                    num_workers=cfg.VAL.NUM_WORKERS,
-                    drop_last=False,
-                    pin_memory=False,
-                )
+            val_sim_loader = DataLoader(
+                val_sim_dataset,
+                batch_size=cfg.VAL.BATCH_SIZE,
+                sampler=val_sim_sampler,
+                num_workers=cfg.VAL.NUM_WORKERS,
+                drop_last=False,
+                pin_memory=False,
             )
         else:
             val_sim_loader = None
@@ -203,70 +209,75 @@ if __name__ == "__main__":
                 rank=dist.get_rank(),
                 shuffle=False,
             )
-            val_real_loader = iter(
-                DataLoader(
-                    val_real_dataset,
-                    batch_size=cfg.VAL.BATCH_SIZE,
-                    sampler=val_real_sampler,
-                    num_workers=cfg.VAL.NUM_WORKERS,
-                    drop_last=False,
-                    pin_memory=False,
-                )
+            val_real_loader = DataLoader(
+                val_real_dataset,
+                batch_size=cfg.VAL.BATCH_SIZE,
+                sampler=val_real_sampler,
+                num_workers=cfg.VAL.NUM_WORKERS,
+                drop_last=False,
+                pin_memory=False,
             )
         else:
             val_real_loader = None
 
     else:
         if train_sim_dataset:
+            sampler = RandomSampler(train_sim_dataset, replacement=False)
+            batch_sampler = BatchSampler(sampler, batch_size=cfg.TRAIN.BATCH_SIZE, drop_last=True)
+            batch_sampler = IterationBasedBatchSampler(
+                batch_sampler, num_iterations=cfg.TRAIN.MAX_ITER, start_iter=start_iter
+            )
             train_sim_loader = iter(
                 DataLoader(
                     train_sim_dataset,
-                    batch_size=cfg.TRAIN.BATCH_SIZE,
+                    batch_sampler=batch_sampler,
                     num_workers=cfg.TRAIN.NUM_WORKERS,
-                    shuffle=True,
-                    drop_last=True,
-                    pin_memory=True,
+                    worker_init_fn=lambda worker_id: worker_init_fn(
+                        worker_id, base_seed=cfg.RNG_SEED if cfg.RNG_SEED >= 0 else None
+                    ),
                 )
             )
         else:
             train_sim_loader = None
         if train_real_dataset:
+            sampler = RandomSampler(train_real_dataset, replacement=False)
+            batch_sampler = BatchSampler(sampler, batch_size=cfg.TRAIN.BATCH_SIZE, drop_last=True)
+            batch_sampler = IterationBasedBatchSampler(
+                batch_sampler, num_iterations=cfg.TRAIN.MAX_ITER, start_iter=start_iter
+            )
             train_real_loader = iter(
                 DataLoader(
                     train_real_dataset,
-                    batch_size=cfg.TRAIN.BATCH_SIZE,
+                    batch_sampler=batch_sampler,
                     num_workers=cfg.TRAIN.NUM_WORKERS,
-                    shuffle=True,
-                    drop_last=True,
-                    pin_memory=True,
+                    worker_init_fn=lambda worker_id: worker_init_fn(
+                        worker_id, base_seed=cfg.RNG_SEED if cfg.RNG_SEED >= 0 else None
+                    ),
                 )
             )
         else:
             train_real_loader = None
 
         if val_sim_dataset:
-            val_sim_loader = iter(
-                DataLoader(
-                    val_sim_dataset,
-                    batch_size=cfg.VAL.BATCH_SIZE,
-                    num_workers=cfg.VAL.NUM_WORKERS,
-                    shuffle=False,
-                    drop_last=False,
-                    pin_memory=False,
-                )
+            val_sim_loader = DataLoader(
+                val_sim_dataset,
+                batch_size=cfg.VAL.BATCH_SIZE,
+                num_workers=cfg.VAL.NUM_WORKERS,
+                shuffle=False,
+                drop_last=False,
+                pin_memory=False,
             )
+
         else:
             val_sim_loader = None
         if val_real_dataset:
-            val_real_loader = iter(
-                DataLoader(
-                    val_real_dataset,
-                    batch_size=cfg.VAL.BATCH_SIZE,
-                    num_workers=cfg.VAL.NUM_WORKERS,
-                    shuffle=False,
-                    drop_last=False,
-                    pin_memory=False,
-                )
+            val_real_loader = DataLoader(
+                val_real_dataset,
+                batch_size=cfg.VAL.BATCH_SIZE,
+                num_workers=cfg.VAL.NUM_WORKERS,
+                shuffle=False,
+                drop_last=False,
+                pin_memory=False,
             )
         else:
             val_real_loader = None

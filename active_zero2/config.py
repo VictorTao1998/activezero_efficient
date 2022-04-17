@@ -119,6 +119,25 @@ _C.PSMNet = CN()
 _C.PSMNet.MAX_DISP = 192
 
 # ---------------------------------------------------------------------------- #
+# Losses
+# ---------------------------------------------------------------------------- #
+
+_C.LOSS = CN()
+_C.LOSS.SIM_REPROJ = CN()
+_C.LOSS.SIM_REPROJ.WEIGHT = 0.0
+_C.LOSS.SIM_REPROJ.USE_MASK = True
+_C.LOSS.SIM_REPROJ.PATCH_SIZE = 11
+_C.LOSS.SIM_DISP = CN()
+_C.LOSS.SIM_DISP.WEIGHT = 1.0
+
+_C.LOSS.REAL_REPROJ = CN()
+_C.LOSS.REAL_REPROJ.WEIGHT = 1.0
+_C.LOSS.REAL_REPROJ.USE_MASK = False
+_C.LOSS.REAL_REPROJ.PATCH_SIZE = 11
+_C.LOSS.REAL_DISP = CN()
+_C.LOSS.REAL_DISP.WEIGHT = 0.0
+
+# ---------------------------------------------------------------------------- #
 # Optimizer
 # ---------------------------------------------------------------------------- #
 _C.OPTIMIZER = CN()
