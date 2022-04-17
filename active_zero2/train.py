@@ -166,18 +166,18 @@ if __name__ == "__main__":
             train_sim_sampler = DistributedSampler(
                 train_sim_dataset, num_replicas=dist.get_world_size(), rank=dist.get_rank()
             )
+            train_sim_sampler = BatchSampler(train_sim_sampler, batch_size=cfg.TRAIN.BATCH_SIZE, drop_last=True)
             train_sim_sampler = IterationBasedBatchSampler(
                 train_sim_sampler, num_iterations=cfg.TRAIN.MAX_ITER, start_iter=start_iter
             )
             train_sim_loader = iter(
                 DataLoader(
                     train_sim_dataset,
-                    batch_size=cfg.TRAIN.BATCH_SIZE,
-                    sampler=train_sim_sampler,
+                    batch_sampler=train_sim_sampler,
                     num_workers=cfg.TRAIN.NUM_WORKERS,
-                    drop_last=True,
-                    pin_memory=True,
-                    shuffle=False,
+                    worker_init_fn=lambda worker_id: worker_init_fn(
+                        worker_id, base_seed=cfg.RNG_SEED if cfg.RNG_SEED >= 0 else None
+                    ),
                 )
             )
         else:
@@ -187,18 +187,18 @@ if __name__ == "__main__":
             train_real_sampler = DistributedSampler(
                 train_real_dataset, num_replicas=dist.get_world_size(), rank=dist.get_rank()
             )
+            train_real_sampler = BatchSampler(train_real_sampler, batch_size=cfg.TRAIN.BATCH_SIZE, drop_last=True)
             train_real_sampler = IterationBasedBatchSampler(
                 train_real_sampler, num_iterations=cfg.TRAIN.MAX_ITER, start_iter=start_iter
             )
             train_real_loader = iter(
                 DataLoader(
                     train_real_dataset,
-                    batch_size=cfg.TRAIN.BATCH_SIZE,
-                    sampler=train_real_sampler,
+                    batch_sampler=train_real_sampler,
                     num_workers=cfg.TRAIN.NUM_WORKERS,
-                    drop_last=True,
-                    pin_memory=True,
-                    shuffle=False,
+                    worker_init_fn=lambda worker_id: worker_init_fn(
+                        worker_id, base_seed=cfg.RNG_SEED if cfg.RNG_SEED >= 0 else None
+                    ),
                 )
             )
         else:

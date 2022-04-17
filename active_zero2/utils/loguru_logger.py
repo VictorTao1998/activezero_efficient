@@ -10,10 +10,9 @@ from path import Path
 def setup_logger(name, save_dir, rank, filename="log.train.txt", use_std=True):
     """Setup loguru logger"""
     # don't log results for the non-master process
+    logger.remove()
     if rank > 0:
         return logger
-
-    logger.remove()
 
     # TODO:How to set extra parammeter with defualt value in format?
     fmt = (
