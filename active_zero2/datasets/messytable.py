@@ -10,8 +10,8 @@ from PIL import Image
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
-from active_zero2.utils.io import load_pickle
 from active_zero2.datasets.data_augmentation import data_augmentation
+from active_zero2.utils.io import load_pickle
 
 
 class MessyTableDataset(Dataset):
@@ -142,12 +142,15 @@ class MessyTableDataset(Dataset):
         if self.normal_name:
             img_normal_l = crop(img_normal_l)
 
+        data_dict["dir"] = img_dir.name
         data_dict["img_l"] = self.data_aug(img_l).float()
         data_dict["img_r"] = self.data_aug(img_r).float()
         if self.depth_name and self.meta_name:
             data_dict["img_deth_l"] = torch.from_numpy(img_depth_l).float().unsqueeze(0)
             data_dict["img_disp_l"] = torch.from_numpy(img_disp_l).float().unsqueeze(0)
             data_dict["intrinsic_l"] = torch.from_numpy(intrinsic_l).float()
+            data_dict["baseline"] = torch.tensor(baseline).float()
+            data_dict["focal_length"] = torch.tensor(focal_length).float()
 
         if self.left_pattern_name and self.right_pattern_name:
             data_dict["img_pattern_l"] = torch.from_numpy(img_pattern_l).float().unsqueeze(0)

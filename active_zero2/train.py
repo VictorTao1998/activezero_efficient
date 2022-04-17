@@ -15,10 +15,10 @@ import warnings
 import torch
 import torch.backends.cudnn as cudnn
 import torch.distributed as dist
+from torch.nn import SyncBatchNorm
 from torch.utils.data import DataLoader, DistributedSampler
 from torch.utils.data.sampler import BatchSampler, RandomSampler
 from torch.utils.tensorboard import SummaryWriter
-from torch.nn import SyncBatchNorm
 
 from active_zero2.config import cfg
 from active_zero2.datasets.build_dataset import build_dataset
@@ -27,15 +27,7 @@ from active_zero2.utils.cfg_utils import purge_cfg
 from active_zero2.utils.checkpoint import CheckpointerV2
 from active_zero2.utils.loguru_logger import setup_logger
 from active_zero2.utils.metric_logger import MetricLogger
-from active_zero2.utils.reduce import (
-    AverageMeterDict,
-    make_nograd_func,
-    reduce_scalar_outputs,
-    set_random_seed,
-    synchronize,
-    tensor2float,
-    tensor2numpy,
-)
+from active_zero2.utils.reduce import set_random_seed, synchronize
 from active_zero2.utils.sampler import IterationBasedBatchSampler
 from active_zero2.utils.solver import build_lr_scheduler, build_optimizer
 from active_zero2.utils.torch_utils import worker_init_fn

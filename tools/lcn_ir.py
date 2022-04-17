@@ -1,10 +1,10 @@
 import argparse
 import os
-import torch
-import torch.nn as nn
 
 import cv2
 import numpy as np
+import torch
+import torch.nn as nn
 from PIL import Image
 
 parser = argparse.ArgumentParser(description="Extract LCN IR pattern from IR images")

@@ -1,11 +1,11 @@
 import random
+
 import torch
 import torchvision.transforms as Transforms
 
 
 def data_augmentation(data_aug_cfg=None):
-    """
-    """
+    """ """
     transform_list = [Transforms.ToTensor()]
     if data_aug_cfg:
         if data_aug_cfg.GAUSSIAN_BLUR:
