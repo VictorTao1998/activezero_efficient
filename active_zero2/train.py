@@ -18,6 +18,7 @@ import torch.distributed as dist
 from torch.utils.data import DataLoader, DistributedSampler
 from torch.utils.data.sampler import BatchSampler, RandomSampler
 from torch.utils.tensorboard import SummaryWriter
+from torch.nn import SyncBatchNorm
 
 from active_zero2.config import cfg
 from active_zero2.datasets.build_dataset import build_dataset
@@ -26,9 +27,15 @@ from active_zero2.utils.cfg_utils import purge_cfg
 from active_zero2.utils.checkpoint import CheckpointerV2
 from active_zero2.utils.loguru_logger import setup_logger
 from active_zero2.utils.metric_logger import MetricLogger
-from active_zero2.utils.reduce import (AverageMeterDict, make_nograd_func,
-                                       reduce_scalar_outputs, set_random_seed,
-                                       synchronize, tensor2float, tensor2numpy)
+from active_zero2.utils.reduce import (
+    AverageMeterDict,
+    make_nograd_func,
+    reduce_scalar_outputs,
+    set_random_seed,
+    synchronize,
+    tensor2float,
+    tensor2numpy,
+)
 from active_zero2.utils.sampler import IterationBasedBatchSampler
 from active_zero2.utils.solver import build_lr_scheduler, build_optimizer
 from active_zero2.utils.torch_utils import worker_init_fn
@@ -59,6 +66,21 @@ if __name__ == "__main__":
     # Setup the experiment
     # ---------------------------------------------------------------------------- #
     args = parse_args()
+    print(os.environ["MASTER_ADDR"])
+    print(os.environ["MASTER_PORT"])
+    world_size = torch.cuda.device_count()
+    local_rank = args.local_rank
+    torch.cuda.set_device(local_rank)
+
+    # Set up distributed training
+    num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
+    is_distributed = num_gpus > 1
+    if is_distributed:
+        torch.cuda.set_device(local_rank)
+        dist.init_process_group(backend="nccl", init_method="env://")
+        synchronize()
+    cuda_device = torch.device("cuda:{}".format(local_rank))
+
     # Load the configuration
     cfg.merge_from_file(args.config_file)
     cfg.merge_from_list(args.opts)
@@ -80,17 +102,8 @@ if __name__ == "__main__":
             warnings.warn("Output directory exists.")
         os.makedirs(output_dir, exist_ok=True)
 
-    # Set up distributed training
-    num_gpus = int(os.environ["WORLD_SIZE"]) if "WORLD_SIZE" in os.environ else 1
-    is_distributed = num_gpus > 1
-    if is_distributed:
-        torch.cuda.set_device(args.local_rank)
-        torch.distributed.init_process_group(backend="nccl", init_method="env://")
-        synchronize()
-    cuda_device = torch.device("cuda:{}".format(args.local_rank))
-
     logger = setup_logger(
-        f"ActiveZero2.train [{config_name}]", output_dir, rank=args.local_rank, filename=f"log.train.{run_name}.txt"
+        f"ActiveZero2.train [{config_name}]", output_dir, rank=local_rank, filename=f"log.train.{run_name}.txt"
     )
     logger.info(args)
     from active_zero2.utils.collect_env import collect_env_info
@@ -109,6 +122,7 @@ if __name__ == "__main__":
     # Build model
     set_random_seed(cfg.RNG_SEED)
     model = build_model(cfg)
+    model = model.cuda()
 
     # Build optimizer
     optimizer = build_optimizer(cfg, model)
@@ -116,8 +130,9 @@ if __name__ == "__main__":
     scheduler = build_lr_scheduler(cfg, optimizer)
 
     if is_distributed:
+        model = SyncBatchNorm.convert_sync_batchnorm(model)
         model_parallel = torch.nn.parallel.DistributedDataParallel(
-            model, device_ids=[args.local_rank], output_device=args.local_rank
+            model, device_ids=[local_rank], output_device=local_rank
         )
     else:
         model_parallel = torch.nn.DataParallel(model)
@@ -131,7 +146,7 @@ if __name__ == "__main__":
         save_dir=output_dir,
         logger=logger,
         max_to_keep=cfg.TRAIN.MAX_TO_KEEP,
-        local_rank=args.local_rank,
+        local_rank=local_rank,
     )
     checkpoint_data = checkpointer.load(
         cfg.RESUME_PATH, resume=cfg.AUTO_RESUME, resume_states=cfg.RESUME_STATES, strict=cfg.RESUME_STRICT
@@ -162,6 +177,7 @@ if __name__ == "__main__":
                     num_workers=cfg.TRAIN.NUM_WORKERS,
                     drop_last=True,
                     pin_memory=True,
+                    shuffle=False,
                 )
             )
         else:
@@ -182,40 +198,32 @@ if __name__ == "__main__":
                     num_workers=cfg.TRAIN.NUM_WORKERS,
                     drop_last=True,
                     pin_memory=True,
+                    shuffle=False,
                 )
             )
         else:
             train_real_loader = None
 
         if val_sim_dataset:
-            val_sim_sampler = DistributedSampler(
-                val_sim_dataset, num_replicas=dist.get_world_size(), rank=dist.get_rank(), shuffle=False
-            )
             val_sim_loader = DataLoader(
                 val_sim_dataset,
                 batch_size=cfg.VAL.BATCH_SIZE,
-                sampler=val_sim_sampler,
                 num_workers=cfg.VAL.NUM_WORKERS,
                 drop_last=False,
                 pin_memory=False,
+                shuffle=False,
             )
         else:
             val_sim_loader = None
 
         if val_real_dataset:
-            val_real_sampler = DistributedSampler(
-                val_real_dataset,
-                num_replicas=dist.get_world_size(),
-                rank=dist.get_rank(),
-                shuffle=False,
-            )
             val_real_loader = DataLoader(
                 val_real_dataset,
                 batch_size=cfg.VAL.BATCH_SIZE,
-                sampler=val_real_sampler,
                 num_workers=cfg.VAL.NUM_WORKERS,
                 drop_last=False,
                 pin_memory=False,
+                shuffle=False,
             )
         else:
             val_real_loader = None
