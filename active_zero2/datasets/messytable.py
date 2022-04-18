@@ -86,7 +86,7 @@ class MessyTableDataset(Dataset):
         img_r = np.array(Image.open(img_dir / self.right_name).convert(mode="L")) / 255
 
         origin_h, origin_w = img_l.shape[:2]  # (960, 540)
-        if origin_h == 1080:
+        if origin_h in (720, 1080):
             img_l = cv2.resize(img_l, (960, 540), interpolation=cv2.INTER_CUBIC)
             img_r = cv2.resize(img_r, (960, 540), interpolation=cv2.INTER_CUBIC)
 
