@@ -7,6 +7,8 @@ DATA:
       DEPTH_NAME: "depthL.png"
       LEFT_NAME: "0128_irL_kuafu_half.png"
       RIGHT_NAME: "0128_irR_kuafu_half.png"
+      LEFT_PATTERN_NAME: "0128_irL_kuafu_half.png"
+      RIGHT_PATTERN_NAME: "0128_irR_kuafu_half.png"
     REAL:
       ROOT_DIR: "/media/DATA/LINUX_DATA/rand_scenes/rand_scenes"
       SPLIT_FILE: "/media/DATA/LINUX_DATA/rand_scenes/train_list.txt"
@@ -22,6 +24,8 @@ DATA:
       DEPTH_NAME: "depthL.png"
       LEFT_NAME: "0128_irL_kuafu_half.png"
       RIGHT_NAME: "0128_irR_kuafu_half.png"
+      LEFT_PATTERN_NAME: "0128_irL_kuafu_half.png"
+      RIGHT_PATTERN_NAME: "0128_irR_kuafu_half.png"
   TEST:
     REAL:
       ROOT_DIR: "/media/DATA/LINUX_DATA/ICCV2021_Diagnosis/real_data_v9/"
@@ -55,7 +59,7 @@ VAL:
   LOG_PERIOD: 10
 LOSS:
   SIM_REPROJ:
-    WEIGHT: 0.0
+    WEIGHT: 0.01
   REAL_REPROJ:
     WEIGHT: 2.0
 TEST:

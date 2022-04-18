@@ -58,9 +58,10 @@ if __name__ == "__main__":
     # Setup the experiment
     # ---------------------------------------------------------------------------- #
     args = parse_args()
-    print(args)
-    print(os.environ["MASTER_ADDR"])
-    print(os.environ["MASTER_PORT"])
+    if "MASTER_ADDR" in os.environ:
+        print(args)
+        print(os.environ["MASTER_ADDR"])
+        print(os.environ["MASTER_PORT"])
     world_size = torch.cuda.device_count()
     local_rank = args.local_rank
     torch.cuda.set_device(local_rank)
@@ -312,11 +313,12 @@ if __name__ == "__main__":
     tic = time.time()
     for iteration in range(start_iter, max_iter):
         cur_iter = iteration + 1
-        loss = 0
         loss_dict = {}
         time_dict = {}
+        optimizer.zero_grad()
         # sim data
         if train_sim_loader:
+            loss = 0
             data_batch = next(train_sim_loader)
             sim_data_time = time.time() - tic
             time_dict["time_data_sim"] = sim_data_time
@@ -338,10 +340,13 @@ if __name__ == "__main__":
                 sim_disp = model.compute_disp_loss(data_batch, pred_dict)
                 loss += cfg.LOSS.SIM_DISP.WEIGHT * sim_disp
                 loss_dict["loss_sim_disp"] = sim_disp
+            loss_dict["loss_sim_total"] = loss
+            loss.backward()
 
-        real_tic = time.time()
         # real data
+        real_tic = time.time()
         if train_real_loader:
+            loss = 0
             data_batch = next(train_real_loader)
             real_data_time = time.time() - real_tic
             time_dict["time_data_real"] = real_data_time
@@ -363,14 +368,13 @@ if __name__ == "__main__":
                 real_disp = model.compute_disp_loss(data_batch, pred_dict)
                 loss += cfg.LOSS.REAL_DISP.WEIGHT * real_disp
                 loss_dict["loss_real_disp"] = real_disp
+            loss_dict["loss_real_total"] = loss
+            loss.backward()
 
-        loss_dict["loss_total"] = loss
-        optimizer.zero_grad()
+        optimizer.step()
         with torch.no_grad():
             train_meters.update(**loss_dict)
 
-        loss.backward()
-        optimizer.step()
         time_dict["time_batch"] = time.time() - tic
         train_meters.update(**time_dict)
 
