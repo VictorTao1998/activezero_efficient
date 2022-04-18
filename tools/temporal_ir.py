@@ -8,6 +8,7 @@ import os
 import cv2
 import numpy as np
 from PIL import Image
+import time
 
 parser = argparse.ArgumentParser(description="Extract temporal IR pattern from temporal real images")
 parser.add_argument(
@@ -57,6 +58,7 @@ def main():
         prefix = [line.strip() for line in f]
     num = len(prefix)
 
+    start = time.time()
     for idx in range(num):
         for direction in ["irL", "irR"]:
             p = prefix[idx]
@@ -88,7 +90,7 @@ def main():
             )
 
             # Get regression fit on temporal images
-            print(f"Generating {p} temporal {direction} pattern {idx}/{num}")
+            print(f"Generating {p} temporal {direction} pattern {idx}/{num} time: {time.time() - start:.2f}s")
             h, w, d = img_temp.shape
             x = np.linspace(0, d - 1, num=d, dtype=int).reshape(1, 1, -1)
             x = np.repeat(x, h, axis=0)

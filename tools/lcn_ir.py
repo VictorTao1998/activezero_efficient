@@ -6,6 +6,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from PIL import Image
+import time
 
 parser = argparse.ArgumentParser(description="Extract LCN IR pattern from IR images")
 parser.add_argument(
@@ -53,13 +54,14 @@ def main():
         prefix = [line.strip() for line in f]
     num = len(prefix)
 
+    start = time.time()
     for idx in range(num):
         for direction in ["irL", "irR"]:
             p = prefix[idx]
             f6 = os.path.join(args.data_folder, p, f"1024_{direction}_real_360.png")
             img_6 = np.array(Image.open(f6).convert(mode="L"))
 
-            print(f"Generating {p} LCN {direction} pattern {idx}/{num}")
+            print(f"Generating {p} LCN {direction} pattern {idx}/{num} time: {time.time() - start:.2f}s")
             lcn_pattern = local_contrast_norm(img_6, kernel_size=args.patch)
             cv2.imwrite(os.path.join(args.data_folder, p, f"1024_{direction}_real_lcn_ps{args.patch}.png"), lcn_pattern)
 

@@ -58,6 +58,7 @@ if __name__ == "__main__":
     # Setup the experiment
     # ---------------------------------------------------------------------------- #
     args = parse_args()
+    print(args)
     print(os.environ["MASTER_ADDR"])
     print(os.environ["MASTER_PORT"])
     world_size = torch.cuda.device_count()
