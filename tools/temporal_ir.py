@@ -4,11 +4,11 @@ Feature: Extract IR pattern from temporal real images
 """
 import argparse
 import os
+import time
 
 import cv2
 import numpy as np
 from PIL import Image
-import time
 
 parser = argparse.ArgumentParser(description="Extract temporal IR pattern from temporal real images")
 parser.add_argument(

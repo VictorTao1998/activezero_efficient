@@ -1,4 +1,5 @@
 import os
+
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
@@ -88,8 +89,8 @@ class ErrorMetric(object):
             normal_err = np.arccos(np.clip(np.sum(normal_gt * normal_pred, axis=-1), -1, 1))
             normal_err[invalid_mask] = 0
             self.normal_err.append(normal_err.sum() / valid_mask.sum())
-            self.normal_err10.append((normal_err > 10 / 180 * np.pi) / valid_mask.sum())
-            self.normal_err20.append((normal_err > 20 / 180 * np.pi) / valid_mask.sum())
+            self.normal_err10.append((normal_err > 10 / 180 * np.pi).sum() / valid_mask.sum())
+            self.normal_err20.append((normal_err > 20 / 180 * np.pi).sum() / valid_mask.sum())
 
         if "img_label_l" in data_batch:
             label_l = data_batch["img_label_l"].cpu().numpy()[0]
@@ -104,7 +105,7 @@ class ErrorMetric(object):
                     self.obj_depth_err4[i] += (np.abs(depth_diff[obj_mask]) > 4e-3).sum() / obj_mask.sum()
                     if "img_normal_l" in data_batch and "intrinsic_l" in data_batch:
                         self.obj_normal_err[i] += (normal_err[obj_mask]).mean()
-                        self.obj_normal_err10[i] += (normal_err[obj_mask] > 10 / 180 * np.pi) / obj_mask.sum()
+                        self.obj_normal_err10[i] += (normal_err[obj_mask] > 10 / 180 * np.pi).sum() / obj_mask.sum()
 
         if save_folder:
             os.makedirs(save_folder, exist_ok=True)
@@ -113,8 +114,8 @@ class ErrorMetric(object):
             plt.imsave(os.path.join(save_folder, "disp_err.png"), disp_diff, vmin=-8, vmax=8, cmap="jet")
             plt.imsave(os.path.join(save_folder, "depth_err.png"), depth_diff, vmin=-16e-3, vmax=16e-3, cmap="jet")
             if "img_normal_l" in data_batch and "intrinsic_l" in data_batch:
-                cv2.imwrite(os.path.join(save_folder, "normal_gt.png"), (normal_gt * 255).astype(np.uint8))
-                cv2.imwrite(os.path.join(save_folder, "normal_pred.png"), (normal_pred * 255).astype(np.uint8))
+                cv2.imwrite(os.path.join(save_folder, "normal_gt.png"), ((normal_gt + 1) * 127.5).astype(np.uint8))
+                cv2.imwrite(os.path.join(save_folder, "normal_pred.png"), ((normal_pred + 1) * 255).astype(np.uint8))
                 plt.imsave(os.path.join(save_folder, "normal_err.png"), normal_err, vmin=0.0, vmax=np.pi, cmap="jet")
 
         self.epe.append(epe)
@@ -126,7 +127,7 @@ class ErrorMetric(object):
         self.depth_err8.append(depth_err8)
 
     def summary(self):
-        s = "\n"
+        s = ""
         headers = ["epe", "bad1", "bad2", "depth_abs_err", "depth_err2", "depth_err4", "depth_err8"]
         table = [
             [

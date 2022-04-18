@@ -120,7 +120,8 @@ class MessyTableDataset(Dataset):
             img_disp_l[mask] = focal_length * baseline / img_depth_l[mask]
 
         if self.normal_name:
-            img_normal_l = np.array(Image.open(img_dir / self.normal_name))
+            img_normal_l = cv2.imread(img_dir / self.normal_name, cv2.IMREAD_UNCHANGED)
+            img_normal_l = (img_normal_l.astype(float)) / 1000 - 1
             img_normal_l = cv2.resize(img_normal_l, (origin_w, origin_h), interpolation=cv2.INTER_NEAREST)
 
         if self.label_name:

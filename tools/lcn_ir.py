@@ -1,12 +1,12 @@
 import argparse
 import os
+import time
 
 import cv2
 import numpy as np
 import torch
 import torch.nn as nn
 from PIL import Image
-import time
 
 parser = argparse.ArgumentParser(description="Extract LCN IR pattern from IR images")
 parser.add_argument(

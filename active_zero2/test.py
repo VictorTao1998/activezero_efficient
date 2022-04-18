@@ -187,7 +187,7 @@ if __name__ == "__main__":
 
         epoch_time_eval = time.time() - eval_tic
         logger.info("Sim Test {}  total_time: {:.2f}s".format(test_sim_meters.summary_str, epoch_time_eval))
-        logger.info(metric.summary())
+        logger.info("Sim Eval Metric: \n" + metric.summary())
     if test_real_loader:
         logger.info("Real Evaluation")
         eval_tic = tic = time.time()
@@ -231,4 +231,4 @@ if __name__ == "__main__":
         # END
         epoch_time_eval = time.time() - eval_tic
         logger.info("Real Test {}  total_time: {:.2f}s".format(test_real_meters.summary_str, epoch_time_eval))
-        logger.info(metric.summary())
+        logger.info("Real Eval Metric: \n" + metric.summary())
