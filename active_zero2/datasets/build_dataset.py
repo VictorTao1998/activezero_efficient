@@ -40,6 +40,8 @@ def build_dataset(cfg, mode, domain):
         right_name=dataset_cfg.RIGHT_NAME,
         left_pattern_name=dataset_cfg.LEFT_PATTERN_NAME,
         right_pattern_name=dataset_cfg.RIGHT_PATTERN_NAME,
+        label_name=dataset_cfg.LABEL_NAME,
+        num_classes=cfg.DATA.NUM_CLASSES,
         data_aug_cfg=data_aug_cfg,
     )
 

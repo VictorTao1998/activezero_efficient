@@ -132,9 +132,12 @@ if __name__ == "__main__":
         test_real_loader = None
 
     # Build metrics
-
     metric = ErrorMetric(
-        model_type=cfg.MODEL_TYPE, use_mask=cfg.TEST.USE_MASK, max_disp=cfg.TEST.MAX_DISP, is_depth=cfg.TEST.IS_DEPTH
+        model_type=cfg.MODEL_TYPE,
+        use_mask=cfg.TEST.USE_MASK,
+        max_disp=cfg.TEST.MAX_DISP,
+        num_classes=cfg.DATA.NUM_CLASSES,
+        is_depth=cfg.TEST.IS_DEPTH,
     )
 
     # ---------------------------------------------------------------------------- #
@@ -145,6 +148,7 @@ if __name__ == "__main__":
     eval_tic = tic = time.time()
     if test_sim_loader:
         logger.info("Sim Evaluation")
+        metric.reset()
         test_sim_meters = MetricLogger(delimiter="  ")
         test_sim_meters.reset()
         with torch.no_grad():
@@ -157,13 +161,10 @@ if __name__ == "__main__":
                 }
                 # Forward
                 pred_dict = model(data_batch)
-                err_dict = metric.compute(
-                    data_batch, pred_dict, save_folder=output_dir / data_dir if args.save_file else ""
-                )
+                metric.compute(data_batch, pred_dict, save_folder=output_dir / data_dir if args.save_file else "")
 
                 batch_time = time.time() - tic
                 test_sim_meters.update(time=batch_time, data=data_time)
-                test_sim_meters.update(**err_dict)
 
                 # Logging
                 if cfg.TEST.LOG_PERIOD > 0 and cur_iter % cfg.TEST.LOG_PERIOD == 0:
@@ -186,9 +187,11 @@ if __name__ == "__main__":
 
         epoch_time_eval = time.time() - eval_tic
         logger.info("Sim Test {}  total_time: {:.2f}s".format(test_sim_meters.summary_str, epoch_time_eval))
+        logger.info(metric.summary())
     if test_real_loader:
         logger.info("Real Evaluation")
         eval_tic = tic = time.time()
+        metric.reset()
         test_real_meters = MetricLogger(delimiter="  ")
         test_real_meters.reset()
         with torch.no_grad():
@@ -201,13 +204,10 @@ if __name__ == "__main__":
                 }
                 # Forward
                 pred_dict = model(data_batch)
-                err_dict = metric.compute(
-                    data_batch, pred_dict, save_folder=output_dir / data_dir if args.save_file else ""
-                )
+                metric.compute(data_batch, pred_dict, save_folder=output_dir / data_dir if args.save_file else "")
 
                 batch_time = time.time() - tic
                 test_real_meters.update(time=batch_time, data=data_time)
-                test_real_meters.update(**err_dict)
 
                 # Logging
                 if cfg.TEST.LOG_PERIOD > 0 and (cur_iter % cfg.TEST.LOG_PERIOD == 0 or cur_iter == 1):
@@ -231,3 +231,4 @@ if __name__ == "__main__":
         # END
         epoch_time_eval = time.time() - eval_tic
         logger.info("Real Test {}  total_time: {:.2f}s".format(test_real_meters.summary_str, epoch_time_eval))
+        logger.info(metric.summary())

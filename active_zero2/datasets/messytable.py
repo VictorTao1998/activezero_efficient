@@ -30,6 +30,8 @@ class MessyTableDataset(Dataset):
         right_name: str,
         left_pattern_name: str = "",
         right_pattern_name: str = "",
+        label_name: str = "",
+        num_classes: int = 17,
         data_aug_cfg=None,
     ):
         self.mode = mode
@@ -50,6 +52,8 @@ class MessyTableDataset(Dataset):
             left_pattern_name,
             right_pattern_name,
         )
+        self.label_name = label_name
+        self.num_classes = num_classes
         self.data_aug = data_augmentation(data_aug_cfg)
 
         self.img_dirs = self._gen_path_list()
@@ -101,7 +105,7 @@ class MessyTableDataset(Dataset):
 
         if self.depth_name and self.meta_name:
             img_depth_l = np.array(Image.open(img_dir / self.depth_name)) / 1000  # convert from mm to m
-            img_depth_l = cv2.resize(img_depth_l, (origin_w, origin_h), cv2.INTER_NEAREST)
+            img_depth_l = cv2.resize(img_depth_l, (origin_w, origin_h), interpolation=cv2.INTER_NEAREST)
 
             img_meta = load_pickle(img_dir / self.meta_name)
             extrinsic_l = img_meta["extrinsic_l"]
@@ -117,7 +121,11 @@ class MessyTableDataset(Dataset):
 
         if self.normal_name:
             img_normal_l = np.array(Image.open(img_dir / self.normal_name))
-            img_normal_l = cv2.resize(img_normal_l, (origin_w, origin_h), cv2.INTER_NEAREST)
+            img_normal_l = cv2.resize(img_normal_l, (origin_w, origin_h), interpolation=cv2.INTER_NEAREST)
+
+        if self.label_name:
+            img_label_l = cv2.imread(img_dir / self.label_name, cv2.IMREAD_UNCHANGED).astype(int)
+            img_label_l = cv2.resize(img_label_l, (origin_w, origin_h), interpolation=cv2.INTER_NEAREST)
 
         # random crop
         if self.mode == "test":
@@ -127,9 +135,27 @@ class MessyTableDataset(Dataset):
 
             def crop(img):
                 if img.ndim == 2:
-                    img = np.concatenate([np.zeros((2, 960)), img, np.zeros((2, 960))])
+                    img = np.concatenate(
+                        [np.zeros((2, 960), dtype=img.dtype), img, np.zeros((2, 960), dtype=img.dtype)]
+                    )
                 else:
-                    img = np.concatenate([np.zeros((2, 960, img.shape[2])), img, np.zeros((2, 960, img.shape[2]))])
+                    img = np.concatenate(
+                        [
+                            np.zeros((2, 960, img.shape[2]), dtype=img.dtype),
+                            img,
+                            np.zeros((2, 960, img.shape[2]), dtype=img.dtype),
+                        ]
+                    )
+                return img
+
+            def crop_label(img):
+                img = np.concatenate(
+                    [
+                        np.ones((2, 960), dtype=img.dtype) * self.num_classes,
+                        img,
+                        np.ones((2, 960), dtype=img.dtype) * self.num_classes,
+                    ]
+                )
                 return img
 
         else:
@@ -137,6 +163,9 @@ class MessyTableDataset(Dataset):
             y = np.random.randint(0, origin_h - self.height)
 
             def crop(img):
+                return img[y : y + self.height, x : x + self.width]
+
+            def crop_label(img):
                 return img[y : y + self.height, x : x + self.width]
 
         img_l = crop(img_l)
@@ -154,6 +183,9 @@ class MessyTableDataset(Dataset):
         if self.normal_name:
             img_normal_l = crop(img_normal_l)
 
+        if self.label_name:
+            img_label_l = crop_label(img_label_l)
+
         data_dict["dir"] = img_dir.name
         data_dict["img_l"] = self.data_aug(img_l).float()
         data_dict["img_r"] = self.data_aug(img_r).float()
@@ -169,6 +201,8 @@ class MessyTableDataset(Dataset):
             data_dict["img_pattern_r"] = torch.from_numpy(img_pattern_r).float().unsqueeze(0)
         if self.normal_name:
             data_dict["img_normal_l"] = torch.from_numpy(img_normal_l).float().permute(2, 0, 1)
+        if self.label_name:
+            data_dict["img_label_l"] = torch.from_numpy(img_label_l).long()
 
         return data_dict
 

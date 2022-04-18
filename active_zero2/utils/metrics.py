@@ -1,20 +1,44 @@
 import os
-
+import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.nn.functional as F
+from tabulate import tabulate
+
+from active_zero2.utils.geometry import cal_normal_map
 
 # Error metric for messy-table-dataset
 
 
 class ErrorMetric(object):
-    def __init__(self, model_type: str, use_mask: bool = True, max_disp: int = 192, is_depth: bool = False):
+    def __init__(
+        self, model_type: str, use_mask: bool = True, max_disp: int = 192, num_classes: int = 17, is_depth: bool = False
+    ):
         assert model_type in ["PSMNet"], f"Unknown model type: [{model_type}]"
         self.model_type = model_type
         self.use_mask = use_mask
         self.max_disp = max_disp
         self.is_depth = is_depth
+        self.num_classes = num_classes
+
+    def reset(self):
+        self.epe = []
+        self.bad1 = []
+        self.bad2 = []
+        self.depth_abs_err = []
+        self.depth_err2 = []
+        self.depth_err4 = []
+        self.depth_err8 = []
+        self.normal_err = []
+        self.normal_err10 = []
+        self.normal_err20 = []
+        self.obj_disp_err = np.zeros(self.num_classes)
+        self.obj_depth_err = np.zeros(self.num_classes)
+        self.obj_depth_err4 = np.zeros(self.num_classes)
+        self.obj_normal_err = np.zeros(self.num_classes)
+        self.obj_normal_err10 = np.zeros(self.num_classes)
+        self.obj_count = np.zeros(self.num_classes)
 
     def compute(self, data_batch, pred_dict, save_folder=""):
         """
@@ -53,7 +77,34 @@ class ErrorMetric(object):
         depth_err4 = (np.abs(depth_diff[mask]) > 4e-3).sum() / mask.sum()
         depth_err8 = (np.abs(depth_diff[mask]) > 8e-3).sum() / mask.sum()
 
-        # TODO: add normal metric
+        if "img_normal_l" in data_batch and "intrinsic_l" in data_batch:
+            normal_gt = data_batch["img_normal_l"][0].permute(1, 2, 0).cpu().numpy()
+            valid_mask = np.abs(normal_gt).sum(-1) > 0
+            if self.use_mask:
+                valid_mask = np.logical_and(valid_mask, mask)
+            invalid_mask = np.logical_not(valid_mask)
+            intrinsic_l = data_batch["intrinsic_l"][0].cpu().numpy()
+            normal_pred = cal_normal_map(depth_pred, intrinsic_l)
+            normal_err = np.arccos(np.clip(np.sum(normal_gt * normal_pred, axis=-1), -1, 1))
+            normal_err[invalid_mask] = 0
+            self.normal_err.append(normal_err.sum() / valid_mask.sum())
+            self.normal_err10.append((normal_err > 10 / 180 * np.pi) / valid_mask.sum())
+            self.normal_err20.append((normal_err > 20 / 180 * np.pi) / valid_mask.sum())
+
+        if "img_label_l" in data_batch:
+            label_l = data_batch["img_label_l"].cpu().numpy()[0]
+            for i in range(self.num_classes):
+                obj_mask = label_l == i
+                if self.use_mask:
+                    obj_mask = np.logical_and(obj_mask, mask)
+                if obj_mask.sum() > 0:
+                    self.obj_count[i] += 1
+                    self.obj_disp_err[i] += np.abs(disp_diff[obj_mask]).mean()
+                    self.obj_depth_err[i] += np.abs(depth_diff[obj_mask]).mean()
+                    self.obj_depth_err4[i] += (np.abs(depth_diff[obj_mask]) > 4e-3).sum() / obj_mask.sum()
+                    if "img_normal_l" in data_batch and "intrinsic_l" in data_batch:
+                        self.obj_normal_err[i] += (normal_err[obj_mask]).mean()
+                        self.obj_normal_err10[i] += (normal_err[obj_mask] > 10 / 180 * np.pi) / obj_mask.sum()
 
         if save_folder:
             os.makedirs(save_folder, exist_ok=True)
@@ -61,16 +112,61 @@ class ErrorMetric(object):
             plt.imsave(os.path.join(save_folder, "disp_gt.png"), disp_gt, vmin=0.0, vmax=self.max_disp, cmap="jet")
             plt.imsave(os.path.join(save_folder, "disp_err.png"), disp_diff, vmin=-8, vmax=8, cmap="jet")
             plt.imsave(os.path.join(save_folder, "depth_err.png"), depth_diff, vmin=-16e-3, vmax=16e-3, cmap="jet")
+            if "img_normal_l" in data_batch and "intrinsic_l" in data_batch:
+                cv2.imwrite(os.path.join(save_folder, "normal_gt.png"), (normal_gt * 255).astype(np.uint8))
+                cv2.imwrite(os.path.join(save_folder, "normal_pred.png"), (normal_pred * 255).astype(np.uint8))
+                plt.imsave(os.path.join(save_folder, "normal_err.png"), normal_err, vmin=0.0, vmax=np.pi, cmap="jet")
 
-        err = {}
-        err["epe"] = epe
-        err["bad1"] = bad1
-        err["bad2"] = bad2
-        err["depth_abs_err"] = depth_abs_err
-        err["depth_err2"] = depth_err2
-        err["depth_err4"] = depth_err4
-        err["depth_err8"] = depth_err8
-        return err
+        self.epe.append(epe)
+        self.bad1.append(bad1)
+        self.bad2.append(bad2)
+        self.depth_abs_err.append(depth_abs_err)
+        self.depth_err2.append(depth_err2)
+        self.depth_err4.append(depth_err4)
+        self.depth_err8.append(depth_err8)
+
+    def summary(self):
+        s = "\n"
+        headers = ["epe", "bad1", "bad2", "depth_abs_err", "depth_err2", "depth_err4", "depth_err8"]
+        table = [
+            [
+                np.mean(self.epe),
+                np.mean(self.bad1),
+                np.mean(self.bad2),
+                np.mean(self.depth_abs_err),
+                np.mean(self.depth_err2),
+                np.mean(self.depth_err4),
+                np.mean(self.depth_err4),
+            ]
+        ]
+        if self.normal_err:
+            headers += ["norm_err", "norm_err10", "norm_err20"]
+            table[0] += [np.mean(self.normal_err), np.mean(self.normal_err10), np.mean(self.normal_err20)]
+        s += tabulate(table, headers=headers, tablefmt="fancy_grid", floatfmt=".4f")
+
+        if self.obj_count.sum() > 0:
+            headers = ["class_id", "count", "disp_err", "depth_err", "depth_err4"]
+            if self.normal_err:
+                headers += ["obj_norm_err", "obj_norm_err10"]
+            table = []
+            for i in range(self.num_classes):
+                t = [
+                    i,
+                    self.obj_count[i],
+                    self.obj_disp_err[i] / (self.obj_count[i] + 1e-7),
+                    self.obj_disp_err[i] / (self.obj_count[i] + 1e-7),
+                    self.obj_depth_err4[i] / (self.obj_count[i] + 1e-7),
+                ]
+                if self.normal_err:
+                    t += [
+                        self.obj_normal_err[i] / (self.obj_count[i] + 1e-7),
+                        self.obj_normal_err10[i] / (self.obj_count[i] + 1e-7),
+                    ]
+                table.append(t)
+            s += "\n"
+            s += tabulate(table, headers=headers, tablefmt="fancy_grid", floatfmt=".4f")
+
+        return s
 
 
 # Error metric for messy-table-dataset object error

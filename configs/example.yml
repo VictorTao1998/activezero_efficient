@@ -28,15 +28,18 @@ DATA:
       RIGHT_PATTERN_NAME: "0128_irR_kuafu_half.png"
   TEST:
     REAL:
-      ROOT_DIR: "/media/DATA/LINUX_DATA/ICCV2021_Diagnosis/real_data_v9/"
-      SPLIT_FILE: "/media/DATA/LINUX_DATA/ICCV2021_Diagnosis/real_data_v9/test_list.txt"
+      ROOT_DIR: "/media/DATA/LINUX_DATA/ICCV2021_Diagnosis/real_data_v10/"
+      SPLIT_FILE: "/media/DATA/LINUX_DATA/ICCV2021_Diagnosis/real_data_v10/test_list.txt"
       META_NAME: "meta.pkl"
-      DEPTH_NAME: "depth.png"
-      LEFT_NAME: "1024_irL_real_1080.png"
-      RIGHT_NAME: "1024_irR_real_1080.png"
+      DEPTH_NAME: "depthL.png"
+      LEFT_NAME: "1024_irL_real.png"
+      RIGHT_NAME: "1024_irR_real.png"
+      LABEL_NAME: "irL_label_image.png"
       HEIGHT: 544
       WIDTH: 960
 MODEL_TYPE: "PSMNet"
+PSMNet:
+  MAX_DISP: 128
 OPTIMIZER:
   TYPE: "Adam"
   LR: 1e-4
@@ -64,3 +67,4 @@ LOSS:
     WEIGHT: 2.0
 TEST:
   NUM_WORKERS: 0
+  WEIGHT: "/home/rayu/Projects/active_zero2/outputs/example/model_007500.pth"
