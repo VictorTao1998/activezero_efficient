@@ -73,9 +73,7 @@ if __name__ == "__main__":
             warnings.warn("Output directory exists.")
         os.makedirs(output_dir, exist_ok=True)
 
-    logger = setup_logger(
-        f"ActiveZero2.train [{config_name}]", output_dir, rank=0, filename=f"log.train.{run_name}.txt"
-    )
+    logger = setup_logger(f"ActiveZero2.test [{config_name}]", output_dir, rank=0, filename=f"log.train.{run_name}.txt")
     logger.info(args)
     from active_zero2.utils.collect_env import collect_env_info
 
@@ -146,6 +144,7 @@ if __name__ == "__main__":
     logger.info("Begin evaluation...")
     eval_tic = tic = time.time()
     if test_sim_loader:
+        logger.info("Sim Evaluation")
         test_sim_meters = MetricLogger(delimiter="  ")
         test_sim_meters.reset()
         with torch.no_grad():
@@ -156,23 +155,14 @@ if __name__ == "__main__":
                 data_batch = {
                     k: v.cuda(non_blocking=True) for k, v in data_batch.items() if isinstance(v, torch.Tensor)
                 }
-                loss_dict = {}
                 # Forward
                 pred_dict = model(data_batch)
-                err_dict = metric(data_batch, pred_dict, save_folder=output_dir / data_dir if args.save_file else "")
-                sim_reproj = model.compute_reproj_loss(
-                    data_batch,
-                    pred_dict,
-                    use_mask=cfg.LOSS.SIM_REPROJ.USE_MASK,
-                    patch_size=cfg.LOSS.SIM_REPROJ.PATCH_SIZE,
+                err_dict = metric.compute(
+                    data_batch, pred_dict, save_folder=output_dir / data_dir if args.save_file else ""
                 )
-                loss_dict["loss_sim_reproj"] = sim_reproj
-                sim_disp = model.compute_disp_loss(data_batch, pred_dict)
-                loss_dict["loss_sim_disp"] = sim_disp
 
                 batch_time = time.time() - tic
                 test_sim_meters.update(time=batch_time, data=data_time)
-                test_sim_meters.update(**loss_dict)
                 test_sim_meters.update(**err_dict)
 
                 # Logging
@@ -197,6 +187,7 @@ if __name__ == "__main__":
         epoch_time_eval = time.time() - eval_tic
         logger.info("Sim Test {}  total_time: {:.2f}s".format(test_sim_meters.summary_str, epoch_time_eval))
     if test_real_loader:
+        logger.info("Real Evaluation")
         eval_tic = tic = time.time()
         test_real_meters = MetricLogger(delimiter="  ")
         test_real_meters.reset()
@@ -208,23 +199,14 @@ if __name__ == "__main__":
                 data_batch = {
                     k: v.cuda(non_blocking=True) for k, v in data_batch.items() if isinstance(v, torch.Tensor)
                 }
-                loss_dict = {}
                 # Forward
                 pred_dict = model(data_batch)
-                err_dict = metric(data_batch, pred_dict, save_folder=output_dir / data_dir if args.save_file else "")
-                sim_reproj = model.compute_reproj_loss(
-                    data_batch,
-                    pred_dict,
-                    use_mask=cfg.LOSS.SIM_REPROJ.USE_MASK,
-                    patch_size=cfg.LOSS.SIM_REPROJ.PATCH_SIZE,
+                err_dict = metric.compute(
+                    data_batch, pred_dict, save_folder=output_dir / data_dir if args.save_file else ""
                 )
-                loss_dict["loss_real_reproj"] = sim_reproj
-                sim_disp = model.compute_disp_loss(data_batch, pred_dict)
-                loss_dict["loss_real_disp"] = sim_disp
 
                 batch_time = time.time() - tic
                 test_real_meters.update(time=batch_time, data=data_time)
-                test_real_meters.update(**loss_dict)
                 test_real_meters.update(**err_dict)
 
                 # Logging

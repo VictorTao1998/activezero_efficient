@@ -179,7 +179,7 @@ class MetricLogger(object):
             if isinstance(v, torch.Tensor):
                 count = v.numel()
                 value = v.item() if count == 1 else v.sum().item()
-            elif isinstance(v, np.ndarray):
+            elif isinstance(v, np.generic):
                 count = v.size
                 value = v.item() if count == 1 else v.sum().item()
             elif isinstance(v, (tuple, list)):

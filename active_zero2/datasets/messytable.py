@@ -55,7 +55,7 @@ class MessyTableDataset(Dataset):
         self.img_dirs = self._gen_path_list()
 
         logger.info(
-            f"MessyTableDataset: domain: {domain}, root_dir: {root_dir}, length: {len(self.img_dirs)},"
+            f"MessyTableDataset: mode: {mode}, domain: {domain}, root_dir: {root_dir}, length: {len(self.img_dirs)},"
             f" left_name: {left_name}, right_name: {right_name},"
             f" left_pattern_name: {left_pattern_name}, right_pattern_name: {right_pattern_name}"
         )
@@ -86,6 +86,14 @@ class MessyTableDataset(Dataset):
         img_r = np.array(Image.open(img_dir / self.right_name).convert(mode="L")) / 255
 
         origin_h, origin_w = img_l.shape[:2]  # (960, 540)
+        if origin_h == 1080:
+            img_l = cv2.resize(img_l, (960, 540), interpolation=cv2.INTER_CUBIC)
+            img_r = cv2.resize(img_r, (960, 540), interpolation=cv2.INTER_CUBIC)
+
+        origin_h, origin_w = img_l.shape[:2]  # (960, 540)
+        assert (
+            origin_h == 540 and origin_w == 960
+        ), f"Only support H=540, W=960. Current input: H={origin_h}, W={origin_w}"
 
         if self.left_pattern_name and self.right_pattern_name:
             img_pattern_l = np.array(Image.open(img_dir / self.left_pattern_name).convert(mode="L")) / 255  # [H, W]
@@ -114,10 +122,14 @@ class MessyTableDataset(Dataset):
         # random crop
         if self.mode == "test":
             x = 0
-            y = 0
-            assert self.height == origin_h and self.width == origin_w, f"Test mode should use the whole image."
+            y = -2
+            assert self.height == 544 and self.width == 960, f"Only support H=544, W=960 for now"
 
             def crop(img):
+                if img.ndim == 2:
+                    img = np.concatenate([np.zeros((2, 960)), img, np.zeros((2, 960))])
+                else:
+                    img = np.concatenate([np.zeros((2, 960, img.shape[2])), img, np.zeros((2, 960, img.shape[2]))])
                 return img
 
         else:
@@ -146,7 +158,7 @@ class MessyTableDataset(Dataset):
         data_dict["img_l"] = self.data_aug(img_l).float()
         data_dict["img_r"] = self.data_aug(img_r).float()
         if self.depth_name and self.meta_name:
-            data_dict["img_deth_l"] = torch.from_numpy(img_depth_l).float().unsqueeze(0)
+            data_dict["img_depth_l"] = torch.from_numpy(img_depth_l).float().unsqueeze(0)
             data_dict["img_disp_l"] = torch.from_numpy(img_disp_l).float().unsqueeze(0)
             data_dict["intrinsic_l"] = torch.from_numpy(intrinsic_l).float()
             data_dict["baseline"] = torch.tensor(baseline).float()

@@ -22,6 +22,16 @@ DATA:
       DEPTH_NAME: "depthL.png"
       LEFT_NAME: "0128_irL_kuafu_half.png"
       RIGHT_NAME: "0128_irR_kuafu_half.png"
+  TEST:
+    REAL:
+      ROOT_DIR: "/media/DATA/LINUX_DATA/ICCV2021_Diagnosis/real_data_v9/"
+      SPLIT_FILE: "/media/DATA/LINUX_DATA/ICCV2021_Diagnosis/real_data_v9/test_list.txt"
+      META_NAME: "meta.pkl"
+      DEPTH_NAME: "depth.png"
+      LEFT_NAME: "1024_irL_real_1080.png"
+      RIGHT_NAME: "1024_irR_real_1080.png"
+      HEIGHT: 544
+      WIDTH: 960
 MODEL_TYPE: "PSMNet"
 OPTIMIZER:
   TYPE: "Adam"
@@ -48,3 +58,5 @@ LOSS:
     WEIGHT: 0.0
   REAL_REPROJ:
     WEIGHT: 2.0
+TEST:
+  NUM_WORKERS: 0

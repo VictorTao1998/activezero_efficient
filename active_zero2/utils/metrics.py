@@ -16,7 +16,7 @@ class ErrorMetric(object):
         self.max_disp = max_disp
         self.is_depth = is_depth
 
-    def forward(self, data_batch, pred_dict, save_folder=""):
+    def compute(self, data_batch, pred_dict, save_folder=""):
         """
         Compute the error metrics for predicted disparity map or depth map
         """
