@@ -73,7 +73,7 @@ if __name__ == "__main__":
             warnings.warn("Output directory exists.")
         os.makedirs(output_dir, exist_ok=True)
 
-    logger = setup_logger(f"ActiveZero2.test [{config_name}]", output_dir, rank=0, filename=f"log.train.{run_name}.txt")
+    logger = setup_logger(f"ActiveZero2.test [{config_name}]", output_dir, rank=0, filename=f"log.test.{run_name}.txt")
     logger.info(args)
     from active_zero2.utils.collect_env import collect_env_info
 
