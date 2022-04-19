@@ -104,7 +104,9 @@ class MessyTableDataset(Dataset):
             img_pattern_r = np.array(Image.open(img_dir / self.right_pattern_name).convert(mode="L")) / 255
 
         if self.depth_name and self.meta_name:
-            img_depth_l = np.array(Image.open(img_dir / self.depth_name)) / 1000  # convert from mm to m
+            img_depth_l = (
+                cv2.imread(img_dir / self.depth_name, cv2.IMREAD_UNCHANGED).astype(float) / 1000
+            )  # convert from mm to m
             img_depth_l = cv2.resize(img_depth_l, (origin_w, origin_h), interpolation=cv2.INTER_NEAREST)
 
             img_meta = load_pickle(img_dir / self.meta_name)
@@ -112,6 +114,7 @@ class MessyTableDataset(Dataset):
             extrinsic_r = img_meta["extrinsic_r"]
             intrinsic_l = img_meta["intrinsic_l"]
             intrinsic_l[:2] /= 2
+            intrinsic_l[2] = np.array([0.0, 0.0, 1.0])
             baseline = np.linalg.norm(extrinsic_l[:, -1] - extrinsic_r[:, -1])
             focal_length = intrinsic_l[0, 0]
 

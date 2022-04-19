@@ -3,13 +3,12 @@ import os
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
+import open3d as o3d
 import torch
 import torch.nn.functional as F
 from tabulate import tabulate
 
-from active_zero2.utils.geometry import cal_normal_map
-
-# Error metric for messy-table-dataset
+from active_zero2.utils.geometry import cal_normal_map, depth2pts_np
 
 
 class ErrorMetric(object):
@@ -22,6 +21,7 @@ class ErrorMetric(object):
         self.max_disp = max_disp
         self.is_depth = is_depth
         self.num_classes = num_classes
+        self.cmap = plt.get_cmap("jet")
 
     def reset(self):
         self.epe = []
@@ -113,6 +113,28 @@ class ErrorMetric(object):
             plt.imsave(os.path.join(save_folder, "disp_gt.png"), disp_gt, vmin=0.0, vmax=self.max_disp, cmap="jet")
             plt.imsave(os.path.join(save_folder, "disp_err.png"), disp_diff, vmin=-8, vmax=8, cmap="jet")
             plt.imsave(os.path.join(save_folder, "depth_err.png"), depth_diff, vmin=-16e-3, vmax=16e-3, cmap="jet")
+            if "intrinsic_l" in data_batch:
+                intrinsic_l = data_batch["intrinsic_l"][0].cpu().numpy()
+                pcd_gt = o3d.geometry.PointCloud()
+                pcd_gt.points = o3d.utility.Vector3dVector(depth2pts_np(depth_gt, intrinsic_l))
+                pcd_gt = pcd_gt.crop(
+                    o3d.geometry.AxisAlignedBoundingBox(
+                        min_bound=np.array([-10, -10, 0.1]), max_bound=np.array([10, 10, 1.8])
+                    )
+                )
+                o3d.io.write_point_cloud(os.path.join(save_folder, "gt.pcd"), pcd_gt)
+                pcd_pred = o3d.geometry.PointCloud()
+                pcd_pred.points = o3d.utility.Vector3dVector(depth2pts_np(depth_pred, intrinsic_l))
+                pcd_pred.colors = o3d.utility.Vector3dVector(
+                    self.cmap(np.clip((depth_diff + 16e-3) / 32e-3, 0, 1))[..., :3].reshape(-1, 3)
+                )
+                pcd_pred = pcd_pred.crop(
+                    o3d.geometry.AxisAlignedBoundingBox(
+                        min_bound=np.array([-10, -10, 0.1]), max_bound=np.array([10, 10, 1.8])
+                    )
+                )
+                o3d.io.write_point_cloud(os.path.join(save_folder, "pred.pcd"), pcd_pred)
+
             if "img_normal_l" in data_batch and "intrinsic_l" in data_batch:
                 cv2.imwrite(os.path.join(save_folder, "normal_gt.png"), ((normal_gt + 1) * 127.5).astype(np.uint8))
                 cv2.imwrite(os.path.join(save_folder, "normal_pred.png"), ((normal_pred + 1) * 255).astype(np.uint8))
