@@ -38,6 +38,15 @@ DATA:
       NORMAL_NAME: "normalL.png"
       HEIGHT: 544
       WIDTH: 960
+    SIM:
+      ROOT_DIR: "/media/DATA/LINUX_DATA/v12_sample/training"
+      SPLIT_FILE: "/media/DATA/LINUX_DATA/v12_sample/training_lists/all_val.txt"
+      META_NAME: "meta.pkl"
+      DEPTH_NAME: "depthL.png"
+      LEFT_NAME: "0128_irL_kuafu_half.png"
+      RIGHT_NAME: "0128_irR_kuafu_half.png"
+      HEIGHT: 544
+      WIDTH: 960
 MODEL_TYPE: "PSMNet"
 PSMNet:
   MAX_DISP: 128
@@ -68,4 +77,5 @@ LOSS:
     WEIGHT: 2.0
 TEST:
   NUM_WORKERS: 0
-  WEIGHT: "/home/rayu/Projects/active_zero2/outputs/example/model_009500.pth"
+  MAX_DISP: 128
+  WEIGHT: "/home/rayu/Projects/active_zero2/outputs/example/model_030000.pth"
