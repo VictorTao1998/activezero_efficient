@@ -428,10 +428,10 @@ class cfnet(nn.Module):
             nn.Conv3d(32, 1, kernel_size=3, padding=1, stride=1, bias=False),
         )
 
-        self.gamma_s3 = nn.Parameter(torch.zeros(1))
-        self.beta_s3 = nn.Parameter(torch.zeros(1))
-        self.gamma_s2 = nn.Parameter(torch.zeros(1))
-        self.beta_s2 = nn.Parameter(torch.zeros(1))
+        self.gamma_s3 = nn.Parameter(torch.zeros(1), requires_grad=False)
+        self.beta_s3 = nn.Parameter(torch.zeros(1), requires_grad=False)
+        self.gamma_s2 = nn.Parameter(torch.zeros(1), requires_grad=False)
+        self.beta_s2 = nn.Parameter(torch.zeros(1), requires_grad=False)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
