@@ -221,7 +221,7 @@ class PSMNet(nn.Module):
 
         return loss_disp
 
-    def compute_reproj_loss(self, data_batch, pred_dict, use_mask: bool, patch_size: int):
+    def compute_reproj_loss(self, data_batch, pred_dict, use_mask: bool, patch_size: int, only_last_pred: bool):
         if use_mask:
             disp_gt = data_batch["img_disp_l"]
             # Get stereo loss on sim
@@ -230,16 +230,28 @@ class PSMNet(nn.Module):
             mask.detach()
         else:
             mask = None
+        if only_last_pred:
+            loss_reproj = compute_reproj_loss_patch(
+                data_batch["img_pattern_l"],
+                data_batch["img_pattern_r"],
+                pred_disp_l=pred_dict["pred3"],
+                mask=mask,
+                ps=patch_size,
+            )
 
-        loss_reproj = compute_reproj_loss_patch(
-            data_batch["img_pattern_l"],
-            data_batch["img_pattern_r"],
-            pred_disp_l=pred_dict["pred3"],
-            mask=mask,
-            ps=patch_size,
-        )
-
-        return loss_reproj
+            return loss_reproj
+        else:
+            loss_reproj = 0.0
+            for pred_name, loss_weight in zip(["pred1", "pred2", "pred3"], [0.5, 0.7, 1.0]):
+                if pred_name in pred_dict:
+                    loss_reproj += loss_weight * compute_reproj_loss_patch(
+                        data_batch["img_pattern_l"],
+                        data_batch["img_pattern_r"],
+                        pred_disp_l=pred_dict[pred_name],
+                        mask=mask,
+                        ps=patch_size,
+                    )
+            return loss_reproj
 
 
 if __name__ == "__main__":
