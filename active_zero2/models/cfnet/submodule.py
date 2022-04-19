@@ -1,11 +1,11 @@
 """Reference: https://github.com/gallenszl/CFNet"""
+import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.utils.data
 from torch.autograd import Variable
 from torch.autograd.function import Function
-import torch.nn.functional as F
-import numpy as np
 
 
 class pyramidPooling(nn.Module):

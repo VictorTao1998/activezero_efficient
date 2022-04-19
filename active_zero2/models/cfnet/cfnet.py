@@ -1,9 +1,11 @@
 """Reference: https://github.com/gallenszl/CFNet"""
+import math
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
 from active_zero2.models.cfnet.submodule import *
-import math
 from active_zero2.utils.reprojection import compute_reproj_loss_patch
 
 
@@ -202,11 +204,9 @@ class hourglassup(nn.Module):
 
         self.combine1 = nn.Sequential(convbn_3d(in_channels * 4, in_channels * 2, 3, 1, 1), nn.ReLU(inplace=True))
         self.combine2 = nn.Sequential(convbn_3d(in_channels * 6, in_channels * 4, 3, 1, 1), nn.ReLU(inplace=True))
-        self.combine3 = nn.Sequential(convbn_3d(in_channels * 6, in_channels * 4, 3, 1, 1), nn.ReLU(inplace=True))
 
         self.redir1 = convbn_3d(in_channels, in_channels, kernel_size=1, stride=1, pad=0)
         self.redir2 = convbn_3d(in_channels * 2, in_channels * 2, kernel_size=1, stride=1, pad=0)
-        self.redir3 = convbn_3d(in_channels * 4, in_channels * 4, kernel_size=1, stride=1, pad=0)
 
     def forward(self, x, feature4, feature5):
         conv1 = self.conv1(x)  # 1/8
@@ -218,9 +218,6 @@ class hourglassup(nn.Module):
         conv3 = torch.cat((conv3, feature5), dim=1)  # 1/16
         conv3 = self.combine2(conv3)  # 1/16
         conv4 = self.conv4(conv3)  # 1/16
-
-        # conv8 = FMish(self.conv8(conv4) + self.redir2(conv2))
-        # conv9 = FMish(self.conv9(conv8) + self.redir1(x))
 
         conv8 = F.relu(self.conv8(conv4) + self.redir2(conv2), inplace=True)
         conv9 = F.relu(self.conv9(conv8) + self.redir1(x), inplace=True)
