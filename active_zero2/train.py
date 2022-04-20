@@ -442,6 +442,7 @@ if __name__ == "__main__":
                                 pred_dict,
                                 use_mask=cfg.LOSS.SIM_REPROJ.USE_MASK,
                                 patch_size=cfg.LOSS.SIM_REPROJ.PATCH_SIZE,
+                                only_last_pred=cfg.LOSS.SIM_REPROJ.ONLY_LAST_PRED,
                             )
                             loss += cfg.LOSS.SIM_REPROJ.WEIGHT * sim_reproj
                             loss_dict["loss_sim_reproj"] = sim_reproj
@@ -493,6 +494,7 @@ if __name__ == "__main__":
                                 pred_dict,
                                 use_mask=cfg.LOSS.REAL_REPROJ.USE_MASK,
                                 patch_size=cfg.LOSS.REAL_REPROJ.PATCH_SIZE,
+                                only_last_pred=cfg.LOSS.REAL_REPROJ.ONLY_LAST_PRED,
                             )
                             loss += cfg.LOSS.REAL_REPROJ.WEIGHT * real_reproj
                             loss_dict["loss_real_reproj"] = real_reproj

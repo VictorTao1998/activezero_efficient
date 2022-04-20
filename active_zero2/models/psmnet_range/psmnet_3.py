@@ -172,7 +172,7 @@ class PSMNetRange(nn.Module):
         ref_cost_volume = refimg_feature.unsqueeze(2).expand(bs, feature_size, self.num_disp_4, H, W)
         if self.set_zero:
             # set invalid area to zero
-            valid_mask = (x_base > disp_grid).permute(0, 2, 3, 1).unsqueeze(1)
+            valid_mask = (x_base > disp_grid).permute(0, 3, 1, 2).unsqueeze(1)
             ref_cost_volume = ref_cost_volume * valid_mask
 
         cost = torch.cat((ref_cost_volume, target_cost_volume), dim=1)
@@ -215,7 +215,7 @@ class PSMNetRange(nn.Module):
             pred2 = F.softmax(cost2, dim=1)
             pred2 = self.disp_regression(pred2)
 
-        cost3 = F.interpolate(cost3, (self.num_disp, 4 * H, 4 * W), mode="trilinear", align_corners=False)
+        cost3 = F.interpolate(cost3, (self.num_disp, 4 * H, 4 * W), mode="trilinear", align_corners=True)
         cost3 = torch.squeeze(cost3, 1)
         pred3 = F.softmax(cost3, dim=1)
 
