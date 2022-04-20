@@ -163,7 +163,7 @@ class PSMNetRange(nn.Module):
             .view(1, H, 1, 1)
             .expand(bs, H, W, self.num_disp_4)
         )
-        disp_grid = disp_list_4.view(1, 1, 1, self.num_disp_4).expand(bs, H, W, self.num_disp_4)
+        disp_grid = disp_list_4.view(1, 1, 1, self.num_disp_4).expand(bs, H, W, self.num_disp_4) / W
         target_grids = torch.stack((x_base - disp_grid, y_base), dim=-1).view(bs, H, W * self.num_disp_4, 2)
         target_cost_volume = F.grid_sample(
             targetimg_feature, 2 * target_grids - 1, mode="bilinear", padding_mode="zeros", align_corners=True
