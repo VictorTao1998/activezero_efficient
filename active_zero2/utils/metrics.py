@@ -13,13 +13,20 @@ from active_zero2.utils.geometry import cal_normal_map, depth2pts_np
 
 class ErrorMetric(object):
     def __init__(
-        self, model_type: str, use_mask: bool = True, max_disp: int = 192, num_classes: int = 17, is_depth: bool = False
+        self,
+        model_type: str,
+        use_mask: bool = True,
+        max_disp: int = 192,
+        depth_range=(0.2, 2.0),
+        num_classes: int = 17,
+        is_depth: bool = False,
     ):
         assert model_type in ["PSMNet", "CFNet", "PSMNetRange"], f"Unknown model type: [{model_type}]"
         self.model_type = model_type
         self.use_mask = use_mask
         self.max_disp = max_disp
         self.is_depth = is_depth
+        self.depth_range = depth_range
         self.num_classes = num_classes
         self.cmap = plt.get_cmap("jet")
 
@@ -55,9 +62,9 @@ class ErrorMetric(object):
         elif self.model_type == "PSMNetRange":
             prediction = pred_dict["pred3"]
 
-        prediction = prediction.detach().cpu().numpy()[0, 0]
-        disp_gt = data_batch["img_disp_l"].cpu().numpy()[0, 0]
-        depth_gt = data_batch["img_depth_l"].cpu().numpy()[0, 0]
+        prediction = prediction.detach().cpu().numpy()[0, 0, 2:-2]
+        disp_gt = data_batch["img_disp_l"].cpu().numpy()[0, 0, 2:-2]
+        depth_gt = data_batch["img_depth_l"].cpu().numpy()[0, 0, 2:-2]
         if self.is_depth:
             disp_pred = focal_length * baseline / (prediction + 1e-7)
             depth_pred = prediction
@@ -66,7 +73,11 @@ class ErrorMetric(object):
             disp_pred = prediction
 
         if self.use_mask:
-            mask = np.logical_and(disp_gt > 0, disp_gt < self.max_disp)
+            mask = np.logical_and(disp_gt > 1e-1, disp_gt < self.max_disp)
+            x_base = np.arange(0, disp_gt.shape[1]).reshape(1, -1)
+            mask = np.logical_and(mask, x_base > disp_gt)
+            mask = np.logical_and(mask, depth_gt > self.depth_range[0])
+            mask = np.logical_and(mask, depth_gt < self.depth_range[1])
         else:
             mask = np.ones_like(disp_gt).astype(np.bool)
 
@@ -83,12 +94,13 @@ class ErrorMetric(object):
         depth_err8 = (np.abs(depth_diff[mask]) > 8e-3).sum() / mask.sum()
 
         if "img_normal_l" in data_batch and "intrinsic_l" in data_batch:
-            normal_gt = data_batch["img_normal_l"][0].permute(1, 2, 0).cpu().numpy()
+            normal_gt = data_batch["img_normal_l"][0].permute(1, 2, 0).cpu().numpy()[2:-2]
             valid_mask = np.abs(normal_gt).sum(-1) > 0
             if self.use_mask:
                 valid_mask = np.logical_and(valid_mask, mask)
             invalid_mask = np.logical_not(valid_mask)
             intrinsic_l = data_batch["intrinsic_l"][0].cpu().numpy()
+            intrinsic_l[1, 2] -= 2
             normal_pred = cal_normal_map(depth_pred, intrinsic_l)
             normal_err = np.arccos(np.clip(np.sum(normal_gt * normal_pred, axis=-1), -1, 1))
             normal_err[invalid_mask] = 0
@@ -97,7 +109,7 @@ class ErrorMetric(object):
             self.normal_err20.append((normal_err > 20 / 180 * np.pi).sum() / valid_mask.sum())
 
         if "img_label_l" in data_batch:
-            label_l = data_batch["img_label_l"].cpu().numpy()[0]
+            label_l = data_batch["img_label_l"].cpu().numpy()[0][2:-2]
             for i in range(self.num_classes):
                 obj_mask = label_l == i
                 if self.use_mask:
@@ -115,10 +127,21 @@ class ErrorMetric(object):
             os.makedirs(save_folder, exist_ok=True)
             plt.imsave(os.path.join(save_folder, "disp_pred.png"), disp_pred, vmin=0.0, vmax=self.max_disp, cmap="jet")
             plt.imsave(os.path.join(save_folder, "disp_gt.png"), disp_gt, vmin=0.0, vmax=self.max_disp, cmap="jet")
-            plt.imsave(os.path.join(save_folder, "disp_err.png"), disp_diff, vmin=-8, vmax=8, cmap="jet")
-            plt.imsave(os.path.join(save_folder, "depth_err.png"), depth_diff, vmin=-16e-3, vmax=16e-3, cmap="jet")
+            plt.imsave(
+                os.path.join(save_folder, "disp_err.png"), disp_diff - 1e5 * (1 - mask), vmin=-8, vmax=8, cmap="jet"
+            )
+            plt.imsave(
+                os.path.join(save_folder, "depth_err.png"),
+                depth_diff - 1e5 * (1 - mask),
+                vmin=-16e-3,
+                vmax=16e-3,
+                cmap="jet",
+            )
+            if self.use_mask:
+                plt.imsave(os.path.join(save_folder, "mask.png"), mask.astype(float), vmin=0.0, vmax=1.0, cmap="jet")
             if "intrinsic_l" in data_batch:
                 intrinsic_l = data_batch["intrinsic_l"][0].cpu().numpy()
+                intrinsic_l[1, 2] -= 2
                 pcd_gt = o3d.geometry.PointCloud()
                 pcd_gt.points = o3d.utility.Vector3dVector(depth2pts_np(depth_gt, intrinsic_l))
                 pcd_gt = pcd_gt.crop(
@@ -130,7 +153,7 @@ class ErrorMetric(object):
                 pcd_pred = o3d.geometry.PointCloud()
                 pcd_pred.points = o3d.utility.Vector3dVector(depth2pts_np(depth_pred, intrinsic_l))
                 pcd_pred.colors = o3d.utility.Vector3dVector(
-                    self.cmap(np.clip((depth_diff + 16e-3) / 32e-3, 0, 1))[..., :3].reshape(-1, 3)
+                    self.cmap(np.clip((depth_diff + 16e-3 - 1e5 * (1 - mask)) / 32e-3, 0, 1))[..., :3].reshape(-1, 3)
                 )
                 pcd_pred = pcd_pred.crop(
                     o3d.geometry.AxisAlignedBoundingBox(
@@ -142,7 +165,13 @@ class ErrorMetric(object):
             if "img_normal_l" in data_batch and "intrinsic_l" in data_batch:
                 cv2.imwrite(os.path.join(save_folder, "normal_gt.png"), ((normal_gt + 1) * 127.5).astype(np.uint8))
                 cv2.imwrite(os.path.join(save_folder, "normal_pred.png"), ((normal_pred + 1) * 255).astype(np.uint8))
-                plt.imsave(os.path.join(save_folder, "normal_err.png"), normal_err, vmin=0.0, vmax=np.pi, cmap="jet")
+                plt.imsave(
+                    os.path.join(save_folder, "normal_err.png"),
+                    normal_err * mask[..., None],
+                    vmin=0.0,
+                    vmax=np.pi,
+                    cmap="jet",
+                )
 
         self.epe.append(epe)
         self.bad1.append(bad1)

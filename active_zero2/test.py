@@ -136,6 +136,7 @@ if __name__ == "__main__":
         model_type=cfg.MODEL_TYPE,
         use_mask=cfg.TEST.USE_MASK,
         max_disp=cfg.TEST.MAX_DISP,
+        depth_range=cfg.TEST.DEPTH_RANGE,
         num_classes=cfg.DATA.NUM_CLASSES,
         is_depth=cfg.TEST.IS_DEPTH,
     )

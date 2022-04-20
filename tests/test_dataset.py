@@ -83,6 +83,10 @@ def main():
     plt.imshow(img_pattern_l - img_pattern_l_reprojed)
     # plt.colorbar()
 
+    plt.show(block=False)
+
+    plt.figure(f"Occlusion mask")
+    plt.imshow(data["occ_mask_l"][0].numpy())
     plt.show()
 
 

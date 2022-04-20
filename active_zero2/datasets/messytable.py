@@ -12,6 +12,7 @@ from tqdm import tqdm
 
 from active_zero2.datasets.data_augmentation import data_augmentation
 from active_zero2.utils.io import load_pickle
+from active_zero2.utils.reprojection import apply_disparity
 
 
 class MessyTableDataset(Dataset):
@@ -32,6 +33,7 @@ class MessyTableDataset(Dataset):
         right_pattern_name: str = "",
         label_name: str = "",
         num_classes: int = 17,
+        depth_r_name: str = "",
         data_aug_cfg=None,
     ):
         self.mode = mode
@@ -54,6 +56,7 @@ class MessyTableDataset(Dataset):
         )
         self.label_name = label_name
         self.num_classes = num_classes
+        self.depth_r_name = depth_r_name
         self.data_aug = data_augmentation(data_aug_cfg)
 
         self.img_dirs = self._gen_path_list()
@@ -121,6 +124,12 @@ class MessyTableDataset(Dataset):
             mask = img_depth_l > 0
             img_disp_l = np.zeros_like(img_depth_l)
             img_disp_l[mask] = focal_length * baseline / img_depth_l[mask]
+            if self.depth_r_name:
+                img_depth_r = cv2.imread(img_dir / self.depth_r_name, cv2.IMREAD_UNCHANGED).astype(float) / 1000
+                img_depth_r = cv2.resize(img_depth_r, (origin_w, origin_h), interpolation=cv2.INTER_NEAREST)
+                mask = img_depth_r > 0
+                img_disp_r = np.zeros_like(img_depth_r)
+                img_disp_r[mask] = focal_length * baseline / img_depth_r[mask]
 
         if self.normal_name:
             img_normal_l = cv2.imread(img_dir / self.normal_name, cv2.IMREAD_UNCHANGED)
@@ -179,6 +188,9 @@ class MessyTableDataset(Dataset):
             intrinsic_l[1, 2] -= y
             img_depth_l = crop(img_depth_l)
             img_disp_l = crop(img_disp_l)
+            if self.depth_r_name:
+                img_depth_r = crop(img_depth_r)
+                img_disp_r = crop(img_disp_r)
 
         if self.left_pattern_name and self.right_pattern_name:
             img_pattern_l = crop(img_pattern_l)
@@ -199,6 +211,16 @@ class MessyTableDataset(Dataset):
             data_dict["intrinsic_l"] = torch.from_numpy(intrinsic_l).float()
             data_dict["baseline"] = torch.tensor(baseline).float()
             data_dict["focal_length"] = torch.tensor(focal_length).float()
+            if self.depth_r_name:
+                data_dict["img_depth_r"] = torch.from_numpy(img_depth_r).float().unsqueeze(0)
+                data_dict["img_disp_r"] = torch.from_numpy(img_disp_r).float().unsqueeze(0)
+
+                # compute occlusion
+                img_disp_l_reprojed = apply_disparity(
+                    data_dict["img_disp_r"].unsqueeze(0), -data_dict["img_disp_l"].unsqueeze(0)
+                ).squeeze(0)
+                data_dict["img_disp_l_reprojed"] = img_disp_l_reprojed
+                data_dict["occ_mask_l"] = torch.abs(data_dict["img_disp_l"] - img_disp_l_reprojed) > 1e-1
 
         if self.left_pattern_name and self.right_pattern_name:
             data_dict["img_pattern_l"] = torch.from_numpy(img_pattern_l).float().unsqueeze(0)

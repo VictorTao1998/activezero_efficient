@@ -52,6 +52,7 @@ PSMNetRange:
   MIN_DISP: 12
   MAX_DISP: 96
   NUM_DISP: 192
+  SET_ZERO: True
 OPTIMIZER:
   TYPE: "Adam"
   LR: 1e-4

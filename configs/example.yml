@@ -9,6 +9,7 @@ DATA:
       RIGHT_NAME: "0128_irR_kuafu_half.png"
       LEFT_PATTERN_NAME: "0128_irL_kuafu_half.png"
       RIGHT_PATTERN_NAME: "0128_irR_kuafu_half.png"
+      DEPTH_R_NAME: "depthR.png"
     REAL:
       ROOT_DIR: "/media/DATA/LINUX_DATA/rand_scenes/rand_scenes"
       SPLIT_FILE: "/media/DATA/LINUX_DATA/rand_scenes/train_list.txt"
@@ -78,4 +79,4 @@ LOSS:
 TEST:
   NUM_WORKERS: 0
   MAX_DISP: 128
-  WEIGHT: "/home/rayu/Projects/active_zero2/outputs/example/model_030000.pth"
+  WEIGHT: "/home/rayu/Projects/active_zero2/outputs/example/model_050000.pth"
