@@ -167,7 +167,7 @@ class ErrorMetric(object):
                 cv2.imwrite(os.path.join(save_folder, "normal_pred.png"), ((normal_pred + 1) * 255).astype(np.uint8))
                 plt.imsave(
                     os.path.join(save_folder, "normal_err.png"),
-                    normal_err * mask[..., None],
+                    normal_err * mask,
                     vmin=0.0,
                     vmax=np.pi,
                     cmap="jet",

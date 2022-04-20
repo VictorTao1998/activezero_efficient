@@ -53,6 +53,11 @@ def sub_main(prefix_list):
             f6 = os.path.join(args.data_folder, p, f"0128_{direction}_kuafu_half_no_ir.png")
             img_0 = np.array(Image.open(f0).convert(mode="L"))
             img_6 = np.array(Image.open(f6).convert(mode="L"))
+            h = img_0.shape[0]
+            assert h in (540, 720, 1080), f"Illegal img shape: {img_0.shape}"
+            if h in (720, 1080):
+                img_0 = cv2.resize(img_0, (960, 540), interpolation=cv2.INTER_CUBIC)
+                img_6 = cv2.resize(img_6, (960, 540), interpolation=cv2.INTER_CUBIC)
 
             print(f"Generating {p} binary sim {direction} pattern {idx}/{n} time: {time.time() - start:.2f}s")
             binary_pattern = get_smoothed_ir_pattern2(img_6, img_0, ks=args.patch)

@@ -60,6 +60,10 @@ def main():
             p = prefix[idx]
             f6 = os.path.join(args.data_folder, p, f"1024_{direction}_real_360.png")
             img_6 = np.array(Image.open(f6).convert(mode="L"))
+            h = img_6.shape[0]
+            assert h in (540, 720, 1080), f"Illegal img shape: {img_6.shape}"
+            if h in (720, 1080):
+                img_6 = cv2.resize(img_6, (960, 540), interpolation=cv2.INTER_CUBIC)
 
             print(f"Generating {p} LCN {direction} pattern {idx}/{num} time: {time.time() - start:.2f}s")
             lcn_pattern = local_contrast_norm(img_6, kernel_size=args.patch)
