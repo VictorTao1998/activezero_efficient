@@ -143,6 +143,12 @@ _C.CFNet = CN()
 _C.CFNet.MAX_DISP = 256
 _C.CFNet.USE_CONCAT_VOLUME = True
 
+_C.PSMNetRange = CN()
+_C.PSMNetRange.MIN_DISP = 0
+_C.PSMNetRange.MAX_DISP = 0
+_C.PSMNetRange.NUM_DISP = 0
+_C.PSMNetRange.SET_ZERO = False
+
 # ---------------------------------------------------------------------------- #
 # Losses
 # ---------------------------------------------------------------------------- #

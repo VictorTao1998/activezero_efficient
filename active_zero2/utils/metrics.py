@@ -15,7 +15,7 @@ class ErrorMetric(object):
     def __init__(
         self, model_type: str, use_mask: bool = True, max_disp: int = 192, num_classes: int = 17, is_depth: bool = False
     ):
-        assert model_type in ["PSMNet"], f"Unknown model type: [{model_type}]"
+        assert model_type in ["PSMNet", "CFNet", "PSMNetRange"], f"Unknown model type: [{model_type}]"
         self.model_type = model_type
         self.use_mask = use_mask
         self.max_disp = max_disp
@@ -49,6 +49,10 @@ class ErrorMetric(object):
         baseline = data_batch["baseline"][0].cpu().numpy()
 
         if self.model_type == "PSMNet":
+            prediction = pred_dict["pred3"]
+        elif self.model_type == "CFNet":
+            prediction = pred_dict["disp_preds"][-1]
+        elif self.model_type == "PSMNetRange":
             prediction = pred_dict["pred3"]
 
         prediction = prediction.detach().cpu().numpy()[0, 0]
