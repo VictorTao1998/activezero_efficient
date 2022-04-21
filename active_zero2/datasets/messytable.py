@@ -12,7 +12,7 @@ from tqdm import tqdm
 
 from active_zero2.datasets.data_augmentation import data_augmentation
 from active_zero2.utils.io import load_pickle
-from active_zero2.utils.reprojection import apply_disparity
+from active_zero2.utils.reprojection import apply_disparity, apply_disparity_v2
 
 
 class MessyTableDataset(Dataset):
@@ -220,10 +220,14 @@ class MessyTableDataset(Dataset):
                 data_dict["img_disp_r"] = torch.from_numpy(img_disp_r).float().unsqueeze(0)
 
                 # compute occlusion
-                img_disp_l_reprojed = apply_disparity(
+                img_disp_l_reprojed = apply_disparity_v2(
                     data_dict["img_disp_r"].unsqueeze(0), -data_dict["img_disp_l"].unsqueeze(0)
                 ).squeeze(0)
                 data_dict["img_disp_l_reprojed"] = img_disp_l_reprojed
+                # img_disp_l_reprojed_v2 = apply_disparity_v2(
+                #     data_dict["img_disp_r"].unsqueeze(0), -data_dict["img_disp_l"].unsqueeze(0)
+                # ).squeeze(0)
+                # data_dict["img_disp_l_reprojed_v2"] = img_disp_l_reprojed_v2
                 data_dict["occ_mask_l"] = torch.abs(data_dict["img_disp_l"] - img_disp_l_reprojed) > 1e-1
 
         if self.left_pattern_name and self.right_pattern_name:

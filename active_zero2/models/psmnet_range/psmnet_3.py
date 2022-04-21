@@ -163,7 +163,7 @@ class PSMNetRange(nn.Module):
             .view(1, H, 1, 1)
             .expand(bs, H, W, self.num_disp_4)
         )
-        disp_grid = disp_list_4.view(1, 1, 1, self.num_disp_4).expand(bs, H, W, self.num_disp_4) / W
+        disp_grid = (disp_list_4 / (W - 1)).view(1, 1, 1, self.num_disp_4).expand(bs, H, W, self.num_disp_4)
         target_grids = torch.stack((x_base - disp_grid, y_base), dim=-1).view(bs, H, W * self.num_disp_4, 2)
         target_cost_volume = F.grid_sample(
             targetimg_feature, 2 * target_grids - 1, mode="bilinear", padding_mode="zeros", align_corners=True
@@ -198,13 +198,13 @@ class PSMNetRange(nn.Module):
                 cost1,
                 (self.num_disp, 4 * H, 4 * W),
                 mode="trilinear",
-                align_corners=True,
+                align_corners=False,
             )
             cost2 = F.interpolate(
                 cost2,
                 (self.num_disp, 4 * H, 4 * W),
                 mode="trilinear",
-                align_corners=True,
+                align_corners=False,
             )
 
             cost1 = torch.squeeze(cost1, 1)
@@ -215,7 +215,7 @@ class PSMNetRange(nn.Module):
             pred2 = F.softmax(cost2, dim=1)
             pred2 = self.disp_regression(pred2)
 
-        cost3 = F.interpolate(cost3, (self.num_disp, 4 * H, 4 * W), mode="trilinear", align_corners=True)
+        cost3 = F.interpolate(cost3, (self.num_disp, 4 * H, 4 * W), mode="trilinear", align_corners=False)
         cost3 = torch.squeeze(cost3, 1)
         pred3 = F.softmax(cost3, dim=1)
 
@@ -280,13 +280,3 @@ class PSMNetRange(nn.Module):
                         ps=patch_size,
                     )
             return loss_reproj
-
-
-if __name__ == "__main__":
-    # Test PSMNet
-    model = PSMNetRange(maxdisp=192).cuda()
-    model.eval()
-    img_L = torch.rand(1, 3, 256, 512).cuda()
-    img_R = torch.rand(1, 3, 256, 512).cuda()
-    pred = model(img_L, img_R)
-    print(f"pred shape {pred.shape}")  # pred shape torch.Size([1, 1, 256, 512])
