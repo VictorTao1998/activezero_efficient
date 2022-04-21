@@ -116,6 +116,7 @@ if __name__ == "__main__":
     # Build model
     set_random_seed(cfg.RNG_SEED)
     model = build_model(cfg)
+    logger.info(f"Model: \n{model}")
     model = model.cuda()
 
     # Build optimizer

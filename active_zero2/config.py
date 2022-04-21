@@ -155,6 +155,12 @@ _C.PSMNetRange.MAX_DISP = 0
 _C.PSMNetRange.NUM_DISP = 0
 _C.PSMNetRange.SET_ZERO = False
 
+_C.PSMNetRange4 = CN()
+_C.PSMNetRange4.MIN_DISP = 0
+_C.PSMNetRange4.MAX_DISP = 0
+_C.PSMNetRange4.NUM_DISP = 0
+_C.PSMNetRange4.SET_ZERO = False
+
 # ---------------------------------------------------------------------------- #
 # Losses
 # ---------------------------------------------------------------------------- #
