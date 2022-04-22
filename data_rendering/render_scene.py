@@ -307,7 +307,8 @@ def render_gt_depth_label(scene_id, repo_root, target_root, spp, num_views, rand
     sim = sapien.Engine()
     sim.set_log_level("err")
 
-    renderer = sapien.VulkanRenderer()
+    renderer = sapien.VulkanRenderer(offscreen_only=True)
+    renderer.set_log_level("err")
     sim.set_renderer(renderer)
 
     scene_config = sapien.SceneConfig()
