@@ -299,6 +299,8 @@ def render_scene(scene_id, repo_root, target_root, spp, num_views, rand_pattern,
         with open(os.path.join(folder_path, "meta.pkl"), "wb") as f:
             pickle.dump(scene_info, f)
 
+        print(f"finish {folder_path} rendering")
+
 
 def render_gt_depth_label(scene_id, repo_root, target_root, spp, num_views, rand_pattern, fixed_angle, primitives):
     materials_root = os.path.join(repo_root, "data_rendering/materials")
@@ -493,6 +495,8 @@ def render_gt_depth_label(scene_id, repo_root, target_root, spp, num_views, rand
             sem_labels_with_color = COLOR_PALETTE[sem_labels]
             sem_image_with_color = Image.fromarray(sem_labels_with_color.astype("uint8"))
             sem_image_with_color.save(os.path.join(folder_path, "labelR2.png"))
+
+        print(f"finish {folder_path} gt depth and seg")
 
 
 if __name__ == "__main__":
