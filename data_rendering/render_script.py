@@ -12,7 +12,7 @@ import argparse
 parser = argparse.ArgumentParser(description="")
 parser.add_argument("--sub", type=int, required=True)
 parser.add_argument("--total", type=int, required=True)
-parser.add_argument("--target-root", type=int, required=True)
+parser.add_argument("--target-root", type=str, required=True)
 parser.add_argument("--rand-pattern", action="store_true")
 parser.add_argument("--fixed-angle", action="store_true")
 parser.add_argument("--primitives", action="store_true", help="use primitives")

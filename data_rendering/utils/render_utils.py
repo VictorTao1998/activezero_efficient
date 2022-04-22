@@ -30,17 +30,17 @@ TRANSMISSION_MAX = 1.0
 PRIMITIVE_MIN = 5
 PRIMITIVE_MAX = 15
 
-# TEXTURE_FOLDER = "/messytable-slow/mini-imagenet-tools/mini_imagenet/"
-# TEXTURE_LIST = "/messytable-slow/mini-imagenet-tools/mini_imagenet_list.txt"
-# OBJECT_DIR = "/rayc-fast/ICCV2021_Diagnosis/ocrtoc_materials/models/"
-# OBJECT_CSV_PATH = "/rayc-fast/ICCV2021_Diagnosis/ocrtoc_materials/objects.csv"
-# SCENE_DIR = "/rayc-fast/ICCV2021_Diagnosis/ocrtoc_materials/scenes"
+TEXTURE_FOLDER = "/messytable-slow/mini-imagenet-tools/mini_imagenet/"
+TEXTURE_LIST = "/messytable-slow/mini-imagenet-tools/mini_imagenet_list.txt"
+OBJECT_DIR = "/rayc-fast/ICCV2021_Diagnosis/ocrtoc_materials/models/"
+OBJECT_CSV_PATH = "/rayc-fast/ICCV2021_Diagnosis/ocrtoc_materials/objects.csv"
+SCENE_DIR = "/rayc-fast/ICCV2021_Diagnosis/ocrtoc_materials/scenes"
 
-TEXTURE_FOLDER = "/media/DATA/LINUX_DATA/activezero2/datasets/mini_imagenet/"
-TEXTURE_LIST = "/media/DATA/LINUX_DATA/activezero2/datasets/mini_imagenet_list.txt"
-OBJECT_DIR = "/home/rayu/Projects/ICCV2021_Diagnosis/ocrtoc_materials/models/"
-OBJECT_CSV_PATH = "/home/rayu/Projects/ICCV2021_Diagnosis/ocrtoc_materials/objects.csv"
-SCENE_DIR = "/home/rayu/Projects/ICCV2021_Diagnosis/ocrtoc_materials/scenes"
+# TEXTURE_FOLDER = "/media/DATA/LINUX_DATA/activezero2/datasets/mini_imagenet/"
+# TEXTURE_LIST = "/media/DATA/LINUX_DATA/activezero2/datasets/mini_imagenet_list.txt"
+# OBJECT_DIR = "/home/rayu/Projects/ICCV2021_Diagnosis/ocrtoc_materials/models/"
+# OBJECT_CSV_PATH = "/home/rayu/Projects/ICCV2021_Diagnosis/ocrtoc_materials/objects.csv"
+# SCENE_DIR = "/home/rayu/Projects/ICCV2021_Diagnosis/ocrtoc_materials/scenes"
 
 
 def parse_csv(filename):
