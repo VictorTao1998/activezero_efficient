@@ -149,7 +149,7 @@ def render_scene(scene_id, repo_root, target_root, spp, num_views, rand_pattern,
 
     cam_extrinsic_list = np.load(os.path.join(materials_root, "cam_db_neoneo.npy"))
     if fixed_angle:
-        assert num_views < cam_extrinsic_list.shape[0]
+        assert num_views <= cam_extrinsic_list.shape[0]
     else:
         # Obtain random camera poses around a specific center location
         obj_center = np.array([0.425, 0, 0])
