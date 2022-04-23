@@ -2,7 +2,7 @@ import os
 import os.path as osp
 from path import Path
 import numpy as np
-from tqdm import tqdm
+import time
 
 CUR_DIR = os.path.dirname(__file__)
 REPO_ROOT = os.path.abspath(osp.join(osp.dirname(__file__), ".."))
@@ -51,8 +51,9 @@ if __name__ == "__main__":
                 sub_scene_list.append(f"1-{s}")
 
     print(f"Generating {len(sub_scene_list)} scenes from {sub_scene_list[0]} to {sub_scene_list[-1]}")
+    start_time = time.time()
 
-    for sc in tqdm(sub_scene_list):
+    for sc in sub_scene_list:
         if osp.exists(osp.join(target_root, f"{sc}-{num_view-1}/depthR_colored.png")):
             print(f"Skip scene {sc}")
             continue
@@ -68,3 +69,4 @@ if __name__ == "__main__":
         if args.primitives:
             o += " --primitives"
         os.system(o)
+        print(f"time: {time.time() - start_time}")
