@@ -160,9 +160,12 @@ if __name__ == "__main__":
                 data_batch = {
                     k: v.cuda(non_blocking=True) for k, v in data_batch.items() if isinstance(v, torch.Tensor)
                 }
+                data_batch["dir"] = data_dir
                 # Forward
                 pred_dict = model(data_batch)
-                metric.compute(data_batch, pred_dict, save_folder=output_dir / data_dir if args.save_file else "")
+                metric.compute(
+                    data_batch, pred_dict, save_folder=output_dir / data_dir if args.save_file else "", real_data=False
+                )
 
                 batch_time = time.time() - tic
                 test_sim_meters.update(time=batch_time, data=data_time)
@@ -203,9 +206,12 @@ if __name__ == "__main__":
                 data_batch = {
                     k: v.cuda(non_blocking=True) for k, v in data_batch.items() if isinstance(v, torch.Tensor)
                 }
+                data_batch["dir"] = data_dir
                 # Forward
                 pred_dict = model(data_batch)
-                metric.compute(data_batch, pred_dict, save_folder=output_dir / data_dir if args.save_file else "")
+                metric.compute(
+                    data_batch, pred_dict, save_folder=output_dir / data_dir if args.save_file else "", real_data=True
+                )
 
                 batch_time = time.time() - tic
                 test_real_meters.update(time=batch_time, data=data_time)

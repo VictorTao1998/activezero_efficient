@@ -1,5 +1,9 @@
 import os
+import os.path as osp
 
+_ROOT_DIR = os.path.abspath(osp.join(osp.dirname(__file__), "../.."))
+
+from path import Path
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
@@ -28,6 +32,15 @@ class ErrorMetric(object):
         self.is_depth = is_depth
         self.depth_range = depth_range
         self.num_classes = num_classes
+        # load real robot masks
+        mask_dir = Path(_ROOT_DIR) / "active_zero2/assets/real_robot_masks"
+        self.real_robot_masks = {}
+        for mask_file in sorted(mask_dir.listdir("*.png")):
+            mask = cv2.imread(mask_file, flags=cv2.IMREAD_GRAYSCALE)
+            mask = cv2.resize(mask, (960, 540))
+            mask = mask > 0
+            self.real_robot_masks[mask_file.name[:-4]] = mask
+
         self.cmap = plt.get_cmap("jet")
 
     def reset(self):
@@ -48,12 +61,14 @@ class ErrorMetric(object):
         self.obj_normal_err10 = np.zeros(self.num_classes)
         self.obj_count = np.zeros(self.num_classes)
 
-    def compute(self, data_batch, pred_dict, save_folder=""):
+    def compute(self, data_batch, pred_dict, save_folder="", real_data=False):
         """
         Compute the error metrics for predicted disparity map or depth map
         """
         focal_length = data_batch["focal_length"][0].cpu().numpy()
         baseline = data_batch["baseline"][0].cpu().numpy()
+        if "-300" in data_batch["dir"] and real_data:
+            assert self.use_mask, "Use_mask should be True when evaluating real data"
 
         if self.model_type == "PSMNet":
             prediction = pred_dict["pred3"]
@@ -84,6 +99,10 @@ class ErrorMetric(object):
             mask = np.logical_and(mask, x_base > disp_gt)
             mask = np.logical_and(mask, depth_gt > self.depth_range[0])
             mask = np.logical_and(mask, depth_gt < self.depth_range[1])
+            if "-300" in data_batch["dir"] and real_data:
+                view_id = data_batch["dir"].split("-")[-1]
+                if view_id in self.real_robot_masks:
+                    mask = np.logical_and(mask, np.logical_not(self.real_robot_masks[view_id]))
         else:
             mask = np.ones_like(disp_gt).astype(np.bool)
 
