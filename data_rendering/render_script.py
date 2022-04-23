@@ -53,6 +53,9 @@ if __name__ == "__main__":
     print(f"Generating {len(sub_scene_list)} scenes from {sub_scene_list[0]} to {sub_scene_list[-1]}")
 
     for sc in tqdm(sub_scene_list):
+        if osp.exists(osp.join(target_root, f"{sc}-{num_view-1}/depthR_colored.png")):
+            print(f"Skip scene {sc}")
+            continue
         print(f"Generating scene {sc}")
         o = (
             f"{python_path} {render_py_path} --repo-root {repo_root}"
