@@ -3,13 +3,13 @@ import os.path as osp
 
 _ROOT_DIR = os.path.abspath(osp.join(osp.dirname(__file__), "../.."))
 
-from path import Path
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import open3d as o3d
 import torch
 import torch.nn.functional as F
+from path import Path
 from tabulate import tabulate
 
 from active_zero2.utils.geometry import cal_normal_map, depth2pts_np

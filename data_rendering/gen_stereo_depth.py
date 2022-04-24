@@ -7,16 +7,17 @@ sys.path.insert(0, _ROOT_DIR)
 
 import argparse
 import hashlib
+import time
 
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 from path import Path
-import time
 from tqdm import tqdm
 
 from active_zero2.utils.io import load_pickle
 from data_rendering.utils.sim_depth import calc_main_depth_from_left_right_ir
+
 from .utils.render_utils import visualize_depth
 
 

@@ -1,7 +1,9 @@
+import csv
 import json
 import os
 import pickle
 import random
+from collections import OrderedDict
 
 import cv2
 import matplotlib.pyplot as plt
@@ -10,8 +12,6 @@ import sapien.core as sapien
 import transforms3d as t3d
 from path import Path
 from sapien.core import Pose
-from collections import OrderedDict
-import csv
 
 MAX_DEPTH = 2.0
 
@@ -27,8 +27,8 @@ SPECULAR_MAX = 0.8
 TRANSMISSION_MIN = 0.0
 TRANSMISSION_MAX = 1.0
 
-PRIMITIVE_MIN = 5
-PRIMITIVE_MAX = 15
+PRIMITIVE_MIN = 25
+PRIMITIVE_MAX = 50
 
 TEXTURE_FOLDER = "/messytable-slow/mini-imagenet-tools/mini_imagenet/"
 TEXTURE_LIST = "/messytable-slow/mini-imagenet-tools/mini_imagenet_list.txt"
@@ -135,6 +135,12 @@ with open(TEXTURE_LIST, "r") as f:
 def get_random_texture():
     random_file = random.choice(texture_list)
     path = os.path.join(TEXTURE_FOLDER, random_file)
+    return path
+
+
+def get_random_bin_texture():
+    random_file = random.choice(texture_list)
+    path = os.path.join(TEXTURE_FOLDER, random_file[:-4] + "_bin.png")
     return path
 
 
@@ -406,6 +412,66 @@ def load_random_primitives(scene, renderer, idx):
     elif 0.1 <= prob < 0.6:
         material.set_diffuse_texture_from_file(get_random_texture())
 
+    # Build
+    if type == "sphere":
+        r = 0.02 + np.random.rand() * 0.05
+        l = 0
+        builder.add_sphere_visual(radius=r, material=material)
+        builder.add_sphere_collision(radius=r)
+        s = builder.build_kinematic(name=str(idx))
+        s.set_pose(get_random_pose())
+    elif type == "capsule":
+        r = 0.02 + np.random.rand() * 0.05
+        l = 0.02 + np.random.rand() * 0.05
+        builder.add_capsule_visual(radius=r, half_length=l, material=material)
+        builder.add_capsule_collision(radius=r, half_length=l)
+        s = builder.build_kinematic(name=str(idx))
+        s.set_pose(get_random_pose())
+    elif type == "box":
+        r = 0.02 + np.random.rand() * 0.05
+        l = 0
+        builder.add_box_visual(half_size=[r, r, r], material=material)
+        builder.add_box_collision(half_size=[r, r, r])
+        s = builder.build_kinematic(name=str(idx))
+        s.set_pose(get_random_pose())
+
+    primitive_info = {
+        f"obj_{idx}": {
+            "idx": idx,
+            "type": type,
+            "material": {
+                "base_color": material.base_color,
+                "metallic": material.metallic,
+                "roughness": material.roughness,
+                "specular": material.specular,
+                "ior": material.ior,
+            },
+            "size": {"r": r, "l": l},
+            "pose": s.get_pose().to_transformation_matrix(),
+        }
+    }
+
+    return primitive_info
+
+
+def load_random_primitives_v2(scene, renderer, idx):
+    type = random.choice(["sphere", "capsule", "box"])
+
+    builder = scene.create_actor_builder()
+
+    # Randomize material
+    material = renderer.create_material()
+    material.base_color = [np.random.rand(), np.random.rand(), np.random.rand(), 1.0]
+    material.metallic = random.uniform(METALLIC_MIN, METALLIC_MAX)
+    material.roughness = random.uniform(ROUGHNESS_MIN, ROUGHNESS_MAX)
+    material.specular = random.uniform(SPECULAR_MIN, SPECULAR_MAX)
+    material.ior = 1 + random.random()
+    prob = random.random()
+    if prob < 0.2:
+        material.set_transmission_texture_from_file(get_random_bin_texture())
+    elif prob < 0.7:
+        material.set_diffuse_texture_from_file(get_random_texture())
+    #
     # Build
     if type == "sphere":
         r = 0.02 + np.random.rand() * 0.05

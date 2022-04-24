@@ -1,8 +1,9 @@
 import os
 import os.path as osp
-from path import Path
-import numpy as np
 import time
+
+import numpy as np
+from path import Path
 
 CUR_DIR = os.path.dirname(__file__)
 REPO_ROOT = os.path.abspath(osp.join(osp.dirname(__file__), ".."))

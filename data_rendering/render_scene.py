@@ -2,7 +2,6 @@ import os
 import os.path as osp
 import sys
 
-
 _ROOT_DIR = os.path.abspath(osp.join(osp.dirname(__file__), ".."))
 sys.path.insert(0, _ROOT_DIR)
 from PIL import Image
@@ -10,7 +9,9 @@ from PIL import Image
 from data_rendering.utils.render_utils import *
 
 
-def render_scene(scene_id, repo_root, target_root, spp, num_views, rand_pattern, fixed_angle, primitives):
+def render_scene(
+    scene_id, repo_root, target_root, spp, num_views, rand_pattern, fixed_angle, primitives, primitives_v2
+):
     materials_root = os.path.join(repo_root, "data_rendering/materials")
 
     # build scene
@@ -171,6 +172,12 @@ def render_scene(scene_id, repo_root, target_root, spp, num_views, rand_pattern,
         for i in range(num_asset):
             info = load_random_primitives(scene, renderer=renderer, idx=i)
             primitive_info.update(info)
+    elif primitives_v2:
+        num_asset = random.randint(PRIMITIVE_MIN, PRIMITIVE_MAX)
+        primitive_info = {}
+        for i in range(num_asset):
+            info = load_random_primitives_v2(scene, renderer=renderer, idx=i)
+            primitive_info.update(info)
     else:
         world_js = json.load(open(os.path.join(SCENE_DIR, f"{scene_id}/input.json"), "r"))
         assets = world_js.keys()
@@ -293,7 +300,7 @@ def render_scene(scene_id, repo_root, target_root, spp, num_views, rand_pattern,
             "intrinsic_l": cam_ir_intrinsic,
             "intrinsic_r": cam_ir_intrinsic,
         }
-        if primitives:
+        if primitives or primitives_v2:
             scene_info["primitives"] = primitive_info
 
         with open(os.path.join(folder_path, "meta.pkl"), "wb") as f:
@@ -302,7 +309,9 @@ def render_scene(scene_id, repo_root, target_root, spp, num_views, rand_pattern,
         print(f"finish {folder_path} rendering")
 
 
-def render_gt_depth_label(scene_id, repo_root, target_root, spp, num_views, rand_pattern, fixed_angle, primitives):
+def render_gt_depth_label(
+    scene_id, repo_root, target_root, spp, num_views, rand_pattern, fixed_angle, primitives, primitives_v2
+):
     materials_root = os.path.join(repo_root, "data_rendering/materials")
 
     # build scene
@@ -367,6 +376,15 @@ def render_gt_depth_label(scene_id, repo_root, target_root, spp, num_views, rand
 
     # set scene layout
     if primitives:
+        # Load primitives from saved meta.pkl
+        main_meta_path = os.path.join(target_root, f"{scene_id}-0", "meta.pkl")
+        main_meta_info = load_pickle(main_meta_path)
+        primitives_info = main_meta_info["primitives"]
+        num_asset = len(primitives_info.keys())
+        for i in range(num_asset):
+            primitive = primitives_info[f"obj_{i}"]
+            load_random_primitives_from_info(scene, renderer=renderer, idx=i, primitive_info=primitive)
+    elif primitives_v2:
         # Load primitives from saved meta.pkl
         main_meta_path = os.path.join(target_root, f"{scene_id}-0", "meta.pkl")
         main_meta_info = load_pickle(main_meta_path)
@@ -440,7 +458,7 @@ def render_gt_depth_label(scene_id, repo_root, target_root, spp, num_views, rand
         vis_depth = visualize_depth(depth)
         cv2.imwrite(os.path.join(folder_path, f"depthR_colored.png"), vis_depth)
 
-        if not primitives:
+        if not (primitives or primitives_v2):
             # render label image
             obj_segmentation = cam_rgb.get_uint32_texture("Segmentation")[..., 1]
 
@@ -511,7 +529,10 @@ if __name__ == "__main__":
     parser.add_argument("--rand-pattern", action="store_true")
     parser.add_argument("--fixed-angle", action="store_true")
     parser.add_argument("--primitives", action="store_true", help="use primitives")
+    parser.add_argument("--primitives-v2", action="store_true", help="use primitives v2")
     args = parser.parse_args()
+
+    assert not (args.primitives and args.primitives_v2), "primitives and v2 cannot be True in one run"
     render_scene(
         args.scene,
         repo_root=args.repo_root,
@@ -521,6 +542,7 @@ if __name__ == "__main__":
         rand_pattern=args.rand_pattern,
         fixed_angle=args.fixed_angle,
         primitives=args.primitives,
+        primitives_v2=args.primitives_v2,
     )
     render_gt_depth_label(
         args.scene,
@@ -531,4 +553,5 @@ if __name__ == "__main__":
         rand_pattern=args.rand_pattern,
         fixed_angle=args.fixed_angle,
         primitives=args.primitives,
+        primitives_v2=args.primitives_v2,
     )
