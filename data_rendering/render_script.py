@@ -17,6 +17,7 @@ parser.add_argument("--target-root", type=str, required=True)
 parser.add_argument("--rand-pattern", action="store_true")
 parser.add_argument("--fixed-angle", action="store_true")
 parser.add_argument("--primitives", action="store_true", help="use primitives")
+parser.add_argument("--primitives-v2", action="store_true", help="use primitives v2")
 args = parser.parse_args()
 
 if __name__ == "__main__":
@@ -69,5 +70,7 @@ if __name__ == "__main__":
             o += " --fixed-angle"
         if args.primitives:
             o += " --primitives"
+        if args.primitives_v2:
+            o += " --primitives-v2"
         os.system(o)
         print(f"time: {time.time() - start_time}")
