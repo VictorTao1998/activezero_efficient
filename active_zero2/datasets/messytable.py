@@ -105,6 +105,8 @@ class MessyTableDataset(Dataset):
         if self.left_pattern_name and self.right_pattern_name:
             img_pattern_l = np.array(Image.open(img_dir / self.left_pattern_name).convert(mode="L")) / 255  # [H, W]
             img_pattern_r = np.array(Image.open(img_dir / self.right_pattern_name).convert(mode="L")) / 255
+            img_pattern_l = cv2.resize(img_pattern_l, (960,540), interpolation=cv2.INTER_NEAREST)
+            img_pattern_r = cv2.resize(img_pattern_r, (960,540), interpolation=cv2.INTER_NEAREST)
             patter_h, pattern_w = img_pattern_l.shape[:2]
             assert (
                 patter_h == 540 and pattern_w == 960

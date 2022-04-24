@@ -9,3 +9,5 @@ __pycache__
 # custom ops
 build/
 *.so
+
+outputs/
