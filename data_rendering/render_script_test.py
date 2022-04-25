@@ -92,7 +92,7 @@ if __name__ == "__main__":
     sim.set_renderer(renderer)
 
     for sc in sub_scene_list:
-        if osp.exists(osp.join(target_root, f"{sc}-{num_view-1}/meta.pkl")):
+        if osp.exists(osp.join(data_root, f"{sc}-{num_view-1}/meta.pkl")):
             logger.info(f"Skip scene {sc} rendering")
             continue
         logger.info(f"Rendering scene {sc}")
@@ -121,7 +121,7 @@ if __name__ == "__main__":
     sim_vk.set_renderer(renderer)
 
     for sc in sub_scene_list:
-        if osp.exists(osp.join(target_root, f"{sc}-{num_view-1}/depthR_colored.png")):
+        if osp.exists(osp.join(data_root, f"{sc}-{num_view-1}/depthR_colored.png")):
             logger.info(f"Skip scene {sc} gt depth and seg")
             continue
         logger.info(f"Generating scene {sc} gt depth and seg")
