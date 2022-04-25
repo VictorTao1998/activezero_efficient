@@ -10,7 +10,7 @@ from path import Path
 
 CUR_DIR = os.path.dirname(__file__)
 REPO_ROOT = os.path.abspath(osp.join(osp.dirname(__file__), ".."))
-
+sys.path.insert(0, REPO_ROOT)
 from data_rendering.render_scene import render_gt_depth_label, render_scene
 
 if __name__ == "__main__":
