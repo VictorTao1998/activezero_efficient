@@ -6,6 +6,7 @@ _ROOT_DIR = os.path.abspath(osp.join(osp.dirname(__file__), ".."))
 sys.path.insert(0, _ROOT_DIR)
 from PIL import Image
 
+from loguru import logger
 from data_rendering.utils.render_utils import *
 
 
@@ -306,7 +307,7 @@ def render_scene(
         with open(os.path.join(folder_path, "meta.pkl"), "wb") as f:
             pickle.dump(scene_info, f)
 
-        print(f"finish {folder_path} rendering")
+        logger.info(f"finish {folder_path} rendering")
 
 
 def render_gt_depth_label(
@@ -514,7 +515,7 @@ def render_gt_depth_label(
             sem_image_with_color = Image.fromarray(sem_labels_with_color.astype("uint8"))
             sem_image_with_color.save(os.path.join(folder_path, "labelR2.png"))
 
-        print(f"finish {folder_path} gt depth and seg")
+        logger.info(f"finish {folder_path} gt depth and seg")
 
 
 if __name__ == "__main__":
