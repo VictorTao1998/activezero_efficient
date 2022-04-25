@@ -4,30 +4,26 @@ import sys
 
 _ROOT_DIR = os.path.abspath(osp.join(osp.dirname(__file__), ".."))
 sys.path.insert(0, _ROOT_DIR)
+from loguru import logger
 from PIL import Image
 
-from loguru import logger
 from data_rendering.utils.render_utils import *
 
 
 def render_scene(
-    scene_id, repo_root, target_root, spp, num_views, rand_pattern, fixed_angle, primitives, primitives_v2
+    sim: sapien.Engine,
+    renderer: sapien.KuafuRenderer,
+    scene_id,
+    repo_root,
+    target_root,
+    spp,
+    num_views,
+    rand_pattern,
+    fixed_angle,
+    primitives,
+    primitives_v2,
 ):
     materials_root = os.path.join(repo_root, "data_rendering/materials")
-
-    # build scene
-    sim = sapien.Engine()
-    sim.set_log_level("err")
-    sapien.KuafuRenderer.set_log_level("err")
-
-    render_config = sapien.KuafuConfig()
-    render_config.use_viewer = False
-    render_config.use_denoiser = True
-    render_config.spp = spp
-    render_config.max_bounces = 8
-
-    renderer = sapien.KuafuRenderer(render_config)
-    sim.set_renderer(renderer)
 
     scene_config = sapien.SceneConfig()
     scene_config.solver_iterations = 25
@@ -308,20 +304,31 @@ def render_scene(
             pickle.dump(scene_info, f)
 
         logger.info(f"finish {folder_path} rendering")
+    scene = None
 
 
 def render_gt_depth_label(
-    scene_id, repo_root, target_root, spp, num_views, rand_pattern, fixed_angle, primitives, primitives_v2
+    sim: sapien.Engine,
+    renderer: sapien.VulkanRenderer,
+    scene_id,
+    repo_root,
+    target_root,
+    spp,
+    num_views,
+    rand_pattern,
+    fixed_angle,
+    primitives,
+    primitives_v2,
 ):
     materials_root = os.path.join(repo_root, "data_rendering/materials")
 
     # build scene
-    sim = sapien.Engine()
-    sim.set_log_level("err")
-
-    renderer = sapien.VulkanRenderer(offscreen_only=True)
-    renderer.set_log_level("err")
-    sim.set_renderer(renderer)
+    # sim = sapien.Engine()
+    # sim.set_log_level("err")
+    #
+    # renderer = sapien.VulkanRenderer(offscreen_only=True)
+    # renderer.set_log_level("err")
+    # sim.set_renderer(renderer)
 
     scene_config = sapien.SceneConfig()
     scene_config.solver_iterations = 25
@@ -433,6 +440,8 @@ def render_gt_depth_label(
             cam_irl = hand_cam_irl
             cam_irr = hand_cam_irr
         cam_rgb.take_picture()
+        p = cam_rgb.get_color_rgba()
+        plt.imsave(os.path.join(folder_path, f"0000_rgb_vulkan.png"), p)
         pos = cam_rgb.get_float_texture("Position")
         depth = -pos[..., 2]
         depth = (depth * 1000.0).astype(np.uint16)
@@ -516,6 +525,8 @@ def render_gt_depth_label(
             sem_image_with_color.save(os.path.join(folder_path, "labelR2.png"))
 
         logger.info(f"finish {folder_path} gt depth and seg")
+    scene = None
+    sim = None
 
 
 if __name__ == "__main__":
