@@ -526,7 +526,6 @@ def render_gt_depth_label(
 
         logger.info(f"finish {folder_path} gt depth and seg")
     scene = None
-    sim = None
 
 
 if __name__ == "__main__":
