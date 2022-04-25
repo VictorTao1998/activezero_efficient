@@ -176,6 +176,9 @@ def render_scene(
             info = load_random_primitives_v2(scene, renderer=renderer, idx=i)
             primitive_info.update(info)
     else:
+        if not os.path.exists(os.path.join(SCENE_DIR, f"{scene_id}/input.json")):
+            logger.warning(f"{SCENE_DIR}/{scene_id}/input.json not exists.")
+            return
         world_js = json.load(open(os.path.join(SCENE_DIR, f"{scene_id}/input.json"), "r"))
         assets = world_js.keys()
         for obj_name in assets:
@@ -403,6 +406,9 @@ def render_gt_depth_label(
             load_random_primitives_from_info(scene, renderer=renderer, idx=i, primitive_info=primitive)
 
     else:
+        if not os.path.exists(os.path.join(SCENE_DIR, f"{scene_id}/input.json")):
+            logger.warning(f"{SCENE_DIR}/{scene_id}/input.json not exists.")
+            return
         world_js = json.load(open(os.path.join(SCENE_DIR, f"{scene_id}/input.json"), "r"))
         assets = world_js.keys()
         actors = []
