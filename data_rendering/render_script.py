@@ -106,6 +106,7 @@ if __name__ == "__main__":
             world_js = json.load(open(os.path.join(SCENE_DIR, f"{sc}/input.json"), "r"))
             if "rubik" in world_js.keys():
                 all_exist = False
+                logger.warning(f"Rubik is in {sc}")
             else:
                 for i in range(num_view):
                     if not osp.exists(osp.join(target_root, f"{sc}-{i}/meta.pkl")):
