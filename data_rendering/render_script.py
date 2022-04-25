@@ -7,11 +7,12 @@ import numpy as np
 import sapien.core as sapien
 from loguru import logger
 from path import Path
+import json
 
 CUR_DIR = os.path.dirname(__file__)
 REPO_ROOT = os.path.abspath(osp.join(osp.dirname(__file__), ".."))
 sys.path.insert(0, REPO_ROOT)
-from data_rendering.render_scene import render_gt_depth_label, render_scene
+from data_rendering.render_scene import render_gt_depth_label, render_scene, SCENE_DIR
 
 if __name__ == "__main__":
     import argparse
@@ -54,7 +55,7 @@ if __name__ == "__main__":
     logger.add(sys.stdout, format=fmt)
     logger.info(f"Args: {args}")
 
-    if args.primitives:
+    if args.primitives or args.primitives_v2:
         total_scene = 2000
         scene_names = np.arange(total_scene)
         sub_total_scene = len(scene_names) // args.total
@@ -97,6 +98,25 @@ if __name__ == "__main__":
         if osp.exists(osp.join(data_root, f"{sc}-{num_view-1}/meta.pkl")):
             logger.info(f"Skip scene {sc} rendering")
             continue
+        if not (args.primitives or args.primitives_v2):
+            all_exist = True
+            if not os.path.exists(os.path.join(SCENE_DIR, f"{sc}/input.json")):
+                logger.warning(f"{SCENE_DIR}/{sc}/input.json not exists.")
+                continue
+            world_js = json.load(open(os.path.join(SCENE_DIR, f"{sc}/input.json"), "r"))
+            if "rubik" in world_js.keys():
+                all_exist = False
+            else:
+                for i in range(num_view):
+                    if not osp.exists(osp.join(target_root, f"{sc}-{i}/meta.pkl")):
+                        all_exist = False
+                        break
+            if all_exist:
+                logger.info(f"Move {target_root}/{sc} to {data_root}/{sc}")
+                for i in range(num_view):
+                    (Path(target_root) / f"{sc}-{i}").move(osp.join(data_root, f"{sc}-{i}"))
+                continue
+
         logger.info(f"Rendering scene {sc}")
         render_scene(
             sim=sim,
