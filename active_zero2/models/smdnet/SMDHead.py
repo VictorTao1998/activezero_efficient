@@ -8,21 +8,22 @@ from ..psmnet.build_model import build_model as build_psmnet
 from .utils import *
 
 class SMDHead(nn.Module):
-    def __init__(self, opt):
+    def __init__(self, cfg):
         super(SMDHead, self).__init__()
-        self.output_representation = opt.output_representation
-        self.maxdisp = opt.maxdisp
-        self.superes_factor = opt.superes_factor
-        self.aspect_ratio = opt.aspect_ratio
+        self.output_representation = cfg.SMDNet.OUTPUT
+        self.maxdisp = cfg.SMDNet.MAXDISP
+        self.superes_factor = cfg.SMDNet.SUPERRES
+        self.aspect_ratio = cfg.SMDNet.ASPECT
         self.last_dim = {"standard": 1, "unimodal": 2, "bimodal": 5}
 
-        self.stereo_network = get_backbone(opt.backbone)(opt)
+        self.stereo_network = build_psmnet(cfg)
         self.mlp = Regressor(filter_channels=[self.stereo_network.init_dim, 1024, 512, 256, 128, self.last_dim[self.output_representation]], \
-                             no_sine=opt.no_sine, no_residual=opt.no_residual)
+                             no_sine=cfg.SMDNet.SINE, no_residual=cfg.SMDNet.RESIDUAL)
 
     def filter(self, left, right, phase='train'):
         # Extract features from the stereo backbone
-        self.feat_list = self.stereo_network(left, right)
+        pred_dict =  self.stereo_network(left, right)
+        self.feat_list = [pred_dict["cost3"], pred_dict["refimg_fea"]]
         self.height = left.shape[2]
         self.width = left.shape[3]
 

@@ -81,6 +81,8 @@ class PSMNet(nn.Module):
         super(PSMNet, self).__init__()
         self.maxdisp = maxdisp
 
+        self.init_dim = 32 + self.maxdisp//4
+
         self.feature_extraction = FeatureExtraction()
 
         self.dres0 = nn.Sequential(
@@ -164,6 +166,7 @@ class PSMNet(nn.Module):
         cost1 = self.classif1(out1)
         cost2 = self.classif2(out2) + cost1
         cost3 = self.classif3(out3) + cost2
+        smd_cost = cost3
 
         if self.training:
             cost1 = F.interpolate(
@@ -200,10 +203,14 @@ class PSMNet(nn.Module):
                 "pred1": pred1,
                 "pred2": pred2,
                 "pred3": pred3,
+                "cost3": torch.squeeze(smd_cost,1),
+                "refimg_fea": refimg_feature,
             }
         else:
             pred_dict = {
                 "pred3": pred3,
+                "cost3": torch.squeeze(smd_cost,1),
+                "refimg_fea": refimg_feature,
             }
 
         return pred_dict
