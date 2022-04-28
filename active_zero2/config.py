@@ -171,6 +171,16 @@ _C.PSMNetRange4.MAX_DISP = 0
 _C.PSMNetRange4.NUM_DISP = 0
 _C.PSMNetRange4.SET_ZERO = False
 
+_C.SMDNet = CN()
+_C.SMDNet.OUTPUT = 'bimodal'
+_C.SMDNet.MAXDISP = 192
+_C.SMDNet.SUPERRES = 1
+_C.SMDNet.ASPECT = 1
+
+# flip the two truth values when validation
+_C.SMDNet.SINE = True
+_C.SMDNet.RESIDUAL = True
+
 _C.PSMNetDilation = CN()
 _C.PSMNetDilation.MIN_DISP = 0
 _C.PSMNetDilation.MAX_DISP = 0
@@ -190,6 +200,8 @@ _C.LOSS.SIM_REPROJ.PATCH_SIZE = 11
 _C.LOSS.SIM_REPROJ.ONLY_LAST_PRED = True
 _C.LOSS.SIM_DISP = CN()
 _C.LOSS.SIM_DISP.WEIGHT = 1.0
+
+_C.LOSS.SIM_SMD = CN()
 _C.LOSS.SIM_SMD.WEIGHT = 1.0
 
 _C.LOSS.REAL_REPROJ = CN()
