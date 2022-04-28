@@ -342,6 +342,9 @@ if __name__ == "__main__":
                 sim_disp = model.compute_disp_loss(data_batch, pred_dict)
                 loss += cfg.LOSS.SIM_DISP.WEIGHT * sim_disp
                 loss_dict["loss_sim_disp"] = sim_disp
+            if cfg.LOSS.SIM_SMD.WEIGHT > 0:
+                for error in pred_dict.values():
+                    loss+= error
             loss_dict["loss_sim_total"] = loss
             loss.backward()
 
@@ -451,6 +454,10 @@ if __name__ == "__main__":
                             sim_disp = model.compute_disp_loss(data_batch, pred_dict)
                             loss += cfg.LOSS.SIM_DISP.WEIGHT * sim_disp
                             loss_dict["loss_sim_disp"] = sim_disp
+
+                        if cfg.LOSS.SIM_SMD.WEIGHT > 0:
+                            for error in pred_dict.values():
+                                loss+=error
 
                     batch_time = time.time() - tic
                     val_meters.update(time=batch_time, data=data_time)

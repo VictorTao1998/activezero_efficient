@@ -105,7 +105,11 @@ class SMDHead(nn.Module):
 
         return errors
 
-    def forward(self, left, right, points, labels=None):
+    def forward(self, data_batch):
+        left = data_batch["img_l"]
+        right = data_batch["img_r"]
+        points = data_batch["img_points"]
+        labels = data_batch["img_labels"]
         # Get stereo features
         self.filter(left, right)
 

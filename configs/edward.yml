@@ -1,3 +1,4 @@
+OUTPUT_DIR: '/edward-slow-vol/checkpoints/smd_new/'
 DATA:
   TRAIN:
     SIM:
