@@ -22,7 +22,8 @@ class SMDHead(nn.Module):
 
     def filter(self, left, right, phase='train'):
         # Extract features from the stereo backbone
-        pred_dict =  self.stereo_network(left, right)
+        batch = {"img_l": left, "img_r": right}
+        pred_dict =  self.stereo_network(batch)
         self.feat_list = [pred_dict["cost3"], pred_dict["refimg_fea"]]
         self.height = left.shape[2]
         self.width = left.shape[3]
