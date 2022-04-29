@@ -1,4 +1,4 @@
-OUTPUT_DIR: '/edward-slow-vol/checkpoints/psmnet_activezero2/'
+OUTPUT_DIR: './'
 DATA:
   TRAIN:
     SIM:

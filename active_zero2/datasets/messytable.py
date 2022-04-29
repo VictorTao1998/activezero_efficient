@@ -35,9 +35,10 @@ class MessyTableDataset(Dataset):
         num_classes: int = 17,
         depth_r_name: str = "",
         data_aug_cfg=None,
+        sample_data: str = "",
     ):
         self.mode = mode
-
+        
         assert domain in ["sim", "real"], f"Unknown dataset mode: [{domain}]"
         self.domain = domain
         self.root_dir = Path(root_dir)
@@ -45,6 +46,7 @@ class MessyTableDataset(Dataset):
             logger.error(f"Not exists root dir: {self.root_dir}")
 
         self.split_file = split_file
+        self.sample_data = sample_data
         self.height, self.width = height, width
         self.meta_name = meta_name
         self.depth_name = depth_name
@@ -61,6 +63,8 @@ class MessyTableDataset(Dataset):
         self.data_aug = data_augmentation(data_aug_cfg)
 
         self.img_dirs = self._gen_path_list()
+        if (self.mode == "train" or self.mode == "val") and self.sample_data:
+            self.__init_grid()
 
         logger.info(
             f"MessyTableDataset: mode: {mode}, domain: {domain}, root_dir: {root_dir}, length: {len(self.img_dirs)},"
@@ -242,8 +246,45 @@ class MessyTableDataset(Dataset):
             data_dict["img_normal_l"] = torch.from_numpy(img_normal_l).float().permute(2, 0, 1)
         if self.label_name:
             data_dict["img_label_l"] = torch.from_numpy(img_label_l).long()
-
+        if self.sample_data:
+            sample_data = self.sampling(data_dict)
+            data_dict.update(sample_data)
         return data_dict
 
     def __len__(self):
         return len(self.img_dirs)
+
+    def __init_grid(self):
+        nu = np.linspace(0, self.width - 1, self.width)
+        nv = np.linspace(0, self.height - 1, self.height)
+        u, v = np.meshgrid(nu, nv)
+
+        self.u = u.flatten()
+        self.v = v.flatten()
+
+    def __get_coords(self, gt):
+        #  Subpixel coordinates
+        u = self.u + np.random.random_sample(self.u.size)
+        v = self.v + np.random.random_sample(self.v.size)
+
+        # Nearest neighbor
+        d = gt[np.clip(np.rint(v).astype(np.uint16), 0, self.height-1),
+                 np.clip(np.rint(u).astype(np.uint16), 0, self.width-1)]
+
+        # Remove invalid disparitiy values
+        u = u[np.nonzero(d)]
+        v = v[np.nonzero(d)]
+        d = d[np.nonzero(d)]
+
+        return np.stack((u, v, d), axis=-1)
+
+    def sampling(self, render_data, sampling="random", num_sample=50000):
+        gt = render_data['img_disp_l'].data.numpy().squeeze()
+
+        # TODO IMPLEMENT DDA
+        if sampling == "random":
+            random_points = self.__get_coords(gt)
+            idx = np.random.choice(random_points.shape[0], num_sample)
+            points = random_points[idx, :]
+        return {'img_points': np.array(points.T, dtype=np.float32),
+                'img_labels': np.array(points[:,2:3].T, dtype=np.float32)}
