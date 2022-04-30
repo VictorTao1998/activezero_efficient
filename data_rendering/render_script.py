@@ -23,6 +23,7 @@ if __name__ == "__main__":
     parser.add_argument("--target-root", type=str, required=True)
     parser.add_argument("--rand-pattern", action="store_true")
     parser.add_argument("--fixed-angle", action="store_true")
+    parser.add_argument("--rand-lighting", action="store_true")
     parser.add_argument("--primitives", action="store_true", help="use primitives")
     parser.add_argument("--primitives-v2", action="store_true", help="use primitives v2")
     args = parser.parse_args()
@@ -98,25 +99,25 @@ if __name__ == "__main__":
         if osp.exists(osp.join(data_root, f"{sc}-{num_view-1}/meta.pkl")):
             logger.info(f"Skip scene {sc} rendering")
             continue
-        if not (args.primitives or args.primitives_v2):
-            all_exist = True
-            if not os.path.exists(os.path.join(SCENE_DIR, f"{sc}/input.json")):
-                logger.warning(f"{SCENE_DIR}/{sc}/input.json not exists.")
-                continue
-            world_js = json.load(open(os.path.join(SCENE_DIR, f"{sc}/input.json"), "r"))
-            if "rubik" in world_js.keys():
-                all_exist = False
-                logger.warning(f"Rubik is in {sc}")
-            else:
-                for i in range(num_view):
-                    if not osp.exists(osp.join(target_root, f"{sc}-{i}/meta.pkl")):
-                        all_exist = False
-                        break
-            if all_exist:
-                logger.info(f"Move {target_root}/{sc} to {data_root}/{sc}")
-                for i in range(num_view):
-                    (Path(target_root) / f"{sc}-{i}").move(osp.join(data_root, f"{sc}-{i}"))
-                continue
+        # if not (args.primitives or args.primitives_v2):
+        #     all_exist = True
+        #     if not os.path.exists(os.path.join(SCENE_DIR, f"{sc}/input.json")):
+        #         logger.warning(f"{SCENE_DIR}/{sc}/input.json not exists.")
+        #         continue
+        #     world_js = json.load(open(os.path.join(SCENE_DIR, f"{sc}/input.json"), "r"))
+        #     if "rubik" in world_js.keys():
+        #         all_exist = False
+        #         logger.warning(f"Rubik is in {sc}")
+        #     else:
+        #         for i in range(num_view):
+        #             if not osp.exists(osp.join(target_root, f"{sc}-{i}/meta.pkl")):
+        #                 all_exist = False
+        #                 break
+        #     if all_exist:
+        #         logger.info(f"Move {target_root}/{sc} to {data_root}/{sc}")
+        #         for i in range(num_view):
+        #             (Path(target_root) / f"{sc}-{i}").move(osp.join(data_root, f"{sc}-{i}"))
+        #         continue
 
         logger.info(f"Rendering scene {sc}")
         render_scene(
@@ -131,6 +132,7 @@ if __name__ == "__main__":
             fixed_angle=args.fixed_angle,
             primitives=args.primitives,
             primitives_v2=args.primitives_v2,
+            rand_lighting=args.rand_lighting,
         )
 
     renderer = None

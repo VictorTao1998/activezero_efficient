@@ -16,6 +16,8 @@ def data_augmentation(data_aug_cfg=None):
                 Transforms.ColorJitter(
                     brightness=[data_aug_cfg.BRIGHT_MIN, data_aug_cfg.BRIGHT_MAX],
                     contrast=[data_aug_cfg.CONTRAST_MIN, data_aug_cfg.CONTRAST_MAX],
+                    saturation=[data_aug_cfg.SATURATION_MIN, data_aug_cfg.SATURATION_MAX],
+                    hue=[data_aug_cfg.HUE_MIN, data_aug_cfg.HUE_MAX],
                 )
             ]
     # Normalization

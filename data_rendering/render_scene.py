@@ -22,6 +22,7 @@ def render_scene(
     fixed_angle,
     primitives,
     primitives_v2,
+    rand_lighting,
 ):
     materials_root = os.path.join(repo_root, "data_rendering/materials")
 
@@ -76,12 +77,92 @@ def render_scene(
     )
 
     # Add lights
-    scene.set_ambient_light([0.5, 0.5, 0.5])
-    plight1 = scene.add_point_light([-0.3, -0.3, 2.5], [30, 30, 30])
-    plight2 = scene.add_point_light([2, -2, 2.5], [10, 10, 10])
-    plight3 = scene.add_point_light([-2, 2, 2.5], [10, 10, 10])
-    plight4 = scene.add_point_light([2, 2, 2.5], [10, 10, 10])
-    plight5 = scene.add_point_light([-2, -2, 2.5], [10, 10, 10])
+    if rand_lighting:
+        ambient_light = np.random.rand(3)
+        scene.set_ambient_light(ambient_light)
+        height = np.random.rand() + 2
+        light_1_color = np.random.rand(3) * 20 + 20
+        light_2_color = np.random.rand(3) * 10 + 5
+        light_3_color = np.random.rand(3) * 10 + 5
+        light_4_color = np.random.rand(3) * 10 + 5
+        light_5_color = np.random.rand(3) * 10 + 5
+        plight1 = scene.add_point_light([-0.3, -0.3, height], light_1_color)
+        plight2 = scene.add_point_light([2, -2, height], light_2_color)
+        plight3 = scene.add_point_light([-2, 2, height], light_3_color)
+        plight4 = scene.add_point_light([2, 2, height], light_4_color)
+        plight5 = scene.add_point_light([-2, -2, height], light_5_color)
+
+        # change light
+        def lights_on():
+            ambient_light = np.random.rand(3)
+            scene.set_ambient_light(ambient_light)
+            light_1_color = np.random.rand(3) * 20 + 20
+            light_2_color = np.random.rand(3) * 10 + 5
+            light_3_color = np.random.rand(3) * 10 + 5
+            light_4_color = np.random.rand(3) * 10 + 5
+            light_5_color = np.random.rand(3) * 10 + 5
+            plight1.set_color(light_1_color)
+            plight2.set_color(light_2_color)
+            plight3.set_color(light_3_color)
+            plight4.set_color(light_4_color)
+            plight5.set_color(light_5_color)
+            alight.set_color([0.0, 0.0, 0.0])
+
+        def lights_off():
+            ambient_light = np.random.rand(3) * 0.05
+            scene.set_ambient_light(ambient_light)
+            alight_color = np.random.rand(3) * np.array((60, 20, 20)) + np.array([30, 10, 10])
+            light_1_color = np.random.rand(3) * 20 + 20
+            light_2_color = np.random.rand(3) * 10 + 5
+            light_3_color = np.random.rand(3) * 10 + 5
+            light_4_color = np.random.rand(3) * 10 + 5
+            light_5_color = np.random.rand(3) * 10 + 5
+            plight1.set_color(light_1_color * 0.01)
+            plight2.set_color(light_2_color * 0.01)
+            plight3.set_color(light_3_color * 0.01)
+            plight4.set_color(light_4_color * 0.01)
+            plight5.set_color(light_5_color * 0.01)
+            alight.set_color(alight_color)
+
+        def light_off_without_alight():
+            alight.set_color([0.0, 0.0, 0.0])
+
+    else:
+        scene.set_ambient_light([0.5, 0.5, 0.5])
+        plight1 = scene.add_point_light([-0.3, -0.3, 2.5], [30, 30, 30])
+        plight2 = scene.add_point_light([2, -2, 2.5], [10, 10, 10])
+        plight3 = scene.add_point_light([-2, 2, 2.5], [10, 10, 10])
+        plight4 = scene.add_point_light([2, 2, 2.5], [10, 10, 10])
+        plight5 = scene.add_point_light([-2, -2, 2.5], [10, 10, 10])
+        # change light
+        def lights_on():
+            scene.set_ambient_light([0.5, 0.5, 0.5])
+            plight1.set_color([30, 30, 30])
+            plight2.set_color([10, 10, 10])
+            plight3.set_color([10, 10, 10])
+            plight4.set_color([10, 10, 10])
+            plight5.set_color([10, 10, 10])
+            alight.set_color([0.0, 0.0, 0.0])
+
+        def lights_off():
+            p_scale = 4.0
+            scene.set_ambient_light([0.03, 0.03, 0.03])
+            plight1.set_color([0.3 * p_scale, 0.1 * p_scale, 0.1 * p_scale])
+            plight2.set_color([0.1 * p_scale, 0.03 * p_scale, 0.03 * p_scale])
+            plight3.set_color([0.1 * p_scale, 0.03 * p_scale, 0.03 * p_scale])
+            plight4.set_color([0.1 * p_scale, 0.03 * p_scale, 0.03 * p_scale])
+            plight5.set_color([0.1 * p_scale, 0.03 * p_scale, 0.03 * p_scale])
+            alight.set_color([60.0, 20.0, 20.0])
+
+        def light_off_without_alight():
+            p_scale = 4.0
+            scene.set_ambient_light([0.03, 0.03, 0.03])
+            plight1.set_color([0.3 * p_scale, 0.1 * p_scale, 0.1 * p_scale])
+            plight2.set_color([0.1 * p_scale, 0.03 * p_scale, 0.03 * p_scale])
+            plight3.set_color([0.1 * p_scale, 0.03 * p_scale, 0.03 * p_scale])
+            plight4.set_color([0.1 * p_scale, 0.03 * p_scale, 0.03 * p_scale])
+            plight5.set_color([0.1 * p_scale, 0.03 * p_scale, 0.03 * p_scale])
+            alight.set_color([0.0, 0.0, 0.0])
 
     mount_T = t3d.quaternions.quat2mat((-0.5, 0.5, 0.5, -0.5))
     fov = np.random.uniform(1.3, 2.0)
@@ -114,36 +195,6 @@ def render_scene(
             fov=fov,
             tex_path=os.path.join(materials_root, "d415-pattern-sq.png"),
         )
-
-    # change light
-    def lights_on():
-        scene.set_ambient_light([0.5, 0.5, 0.5])
-        plight1.set_color([30, 30, 30])
-        plight2.set_color([10, 10, 10])
-        plight3.set_color([10, 10, 10])
-        plight4.set_color([10, 10, 10])
-        plight5.set_color([10, 10, 10])
-        alight.set_color([0.0, 0.0, 0.0])
-
-    def lights_off():
-        p_scale = 4.0
-        scene.set_ambient_light([0.03, 0.03, 0.03])
-        plight1.set_color([0.3 * p_scale, 0.1 * p_scale, 0.1 * p_scale])
-        plight2.set_color([0.1 * p_scale, 0.03 * p_scale, 0.03 * p_scale])
-        plight3.set_color([0.1 * p_scale, 0.03 * p_scale, 0.03 * p_scale])
-        plight4.set_color([0.1 * p_scale, 0.03 * p_scale, 0.03 * p_scale])
-        plight5.set_color([0.1 * p_scale, 0.03 * p_scale, 0.03 * p_scale])
-        alight.set_color([60.0, 20.0, 20.0])
-
-    def light_off_without_alight():
-        p_scale = 4.0
-        scene.set_ambient_light([0.03, 0.03, 0.03])
-        plight1.set_color([0.3 * p_scale, 0.1 * p_scale, 0.1 * p_scale])
-        plight2.set_color([0.1 * p_scale, 0.03 * p_scale, 0.03 * p_scale])
-        plight3.set_color([0.1 * p_scale, 0.03 * p_scale, 0.03 * p_scale])
-        plight4.set_color([0.1 * p_scale, 0.03 * p_scale, 0.03 * p_scale])
-        plight5.set_color([0.1 * p_scale, 0.03 * p_scale, 0.03 * p_scale])
-        alight.set_color([0.0, 0.0, 0.0])
 
     cam_extrinsic_list = np.load(os.path.join(materials_root, "cam_db_neoneo.npy"))
     if fixed_angle:

@@ -134,6 +134,10 @@ _C.DATA_AUG.BRIGHT_MIN = 0.4
 _C.DATA_AUG.BRIGHT_MAX = 1.4
 _C.DATA_AUG.CONTRAST_MIN = 0.8
 _C.DATA_AUG.CONTRAST_MAX = 1.2
+_C.DATA_AUG.SATURATION_MIN = 0.4
+_C.DATA_AUG.SATURATION_MAX = 1.6
+_C.DATA_AUG.HUE_MIN = -0.4
+_C.DATA_AUG.HUE_MAX = 0.4
 
 # ---------------------------------------------------------------------------- #
 # Model
