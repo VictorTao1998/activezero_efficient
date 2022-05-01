@@ -461,12 +461,12 @@ class cfnet(nn.Module):
         min_disparity = torch.clamp(
             input_min_disparity - torch.clamp((sample_count - input_max_disparity + input_min_disparity), min=0) / 2.0,
             min=0,
-            max=self.maxdisp // (2 ** scale) - 1,
+            max=self.maxdisp // (2**scale) - 1,
         )
         max_disparity = torch.clamp(
             input_max_disparity + torch.clamp(sample_count - input_max_disparity + input_min_disparity, min=0) / 2.0,
             min=0,
-            max=self.maxdisp // (2 ** scale) - 1,
+            max=self.maxdisp // (2**scale) - 1,
         )
 
         return min_disparity, max_disparity

@@ -139,6 +139,12 @@ _C.DATA_AUG.SATURATION_MAX = 1.6
 _C.DATA_AUG.HUE_MIN = -0.4
 _C.DATA_AUG.HUE_MAX = 0.4
 
+_C.DATA_AUG.SIM_IR = False
+_C.DATA_AUG.SPECKLE_SHAPE_MIN = 350
+_C.DATA_AUG.SPECKLE_SHAPE_MAX = 450
+_C.DATA_AUG.GAUSSIAN_MU = -1e-3
+_C.DATA_AUG.GAUSSIAN_SIGMA = 4e-3
+
 # ---------------------------------------------------------------------------- #
 # Model
 # ---------------------------------------------------------------------------- #

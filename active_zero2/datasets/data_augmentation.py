@@ -1,5 +1,6 @@
 import random
 
+import numpy as np
 import torch
 import torchvision.transforms as Transforms
 
@@ -29,3 +30,22 @@ def data_augmentation(data_aug_cfg=None):
     ]
     custom_augmentation = Transforms.Compose(transform_list)
     return custom_augmentation
+
+
+class SimIRNoise(object):
+    def __init__(self, data_aug_cfg=None):
+        if data_aug_cfg:
+            self.sim_ir = data_aug_cfg.SIM_IR
+            self.speckle_shape_min = data_aug_cfg.SPECKLE_SHAPE_MIN
+            self.speckle_shape_max = data_aug_cfg.SPECKLE_SHAPE_MAX
+            self.gaussian_mu = data_aug_cfg.GAUSSIAN_MU
+            self.gaussian_sigma = data_aug_cfg.GAUSSIAN_SIGMA
+        else:
+            self.sim_ir = False
+
+    def apply(self, img):
+        if self.sim_ir:
+            speckle_shape = np.random.uniform(self.speckle_shape_min, self.speckle_shape_max)
+            img = img * np.random.gamma(shape=speckle_shape, scale=1.0 / speckle_shape, size=img.shape)
+            img = img + self.gaussian_mu + self.gaussian_sigma * np.random.standard_normal(img.shape)
+        return img

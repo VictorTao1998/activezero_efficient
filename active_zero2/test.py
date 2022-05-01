@@ -183,7 +183,7 @@ if __name__ == "__main__":
                         ).format(
                             iter=cur_iter,
                             meters=str(test_sim_meters),
-                            memory=torch.cuda.max_memory_allocated() / (1024.0 ** 2),
+                            memory=torch.cuda.max_memory_allocated() / (1024.0**2),
                         )
                     )
 
@@ -229,7 +229,7 @@ if __name__ == "__main__":
                         ).format(
                             iter=cur_iter,
                             meters=str(test_real_meters),
-                            memory=torch.cuda.max_memory_allocated() / (1024.0 ** 2),
+                            memory=torch.cuda.max_memory_allocated() / (1024.0**2),
                         )
                     )
 

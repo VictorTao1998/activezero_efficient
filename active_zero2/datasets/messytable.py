@@ -10,7 +10,7 @@ from PIL import Image
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
-from active_zero2.datasets.data_augmentation import data_augmentation
+from active_zero2.datasets.data_augmentation import SimIRNoise, data_augmentation
 from active_zero2.utils.io import load_pickle
 from active_zero2.utils.reprojection import apply_disparity, apply_disparity_v2
 
@@ -57,6 +57,7 @@ class MessyTableDataset(Dataset):
         self.label_name = label_name
         self.num_classes = num_classes
         self.depth_r_name = depth_r_name
+        self.sim_ir_noise = SimIRNoise(data_aug_cfg)
         self.data_aug = data_augmentation(data_aug_cfg)
 
         self.img_dirs = self._gen_path_list()
@@ -207,6 +208,8 @@ class MessyTableDataset(Dataset):
             img_label_l = crop_label(img_label_l)
 
         data_dict["dir"] = img_dir.name
+        img_l = self.sim_ir_noise.apply(img_l)
+        img_r = self.sim_ir_noise.apply(img_r)
         data_dict["img_l"] = self.data_aug(img_l).float()
         data_dict["img_r"] = self.data_aug(img_r).float()
         if self.depth_name and self.meta_name:

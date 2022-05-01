@@ -396,7 +396,7 @@ if __name__ == "__main__":
                     iter=cur_iter,
                     meters=str(train_meters),
                     lr=optimizer.param_groups[0]["lr"],
-                    memory=torch.cuda.max_memory_allocated() / (1024.0 ** 2),
+                    memory=torch.cuda.max_memory_allocated() / (1024.0**2),
                 )
             )
             keywords = (
@@ -469,7 +469,7 @@ if __name__ == "__main__":
                             ).format(
                                 iter=iteration_val,
                                 meters=str(val_meters),
-                                memory=torch.cuda.max_memory_allocated() / (1024.0 ** 2),
+                                memory=torch.cuda.max_memory_allocated() / (1024.0**2),
                             )
                         )
 
@@ -521,7 +521,7 @@ if __name__ == "__main__":
                             ).format(
                                 iter=iteration_val,
                                 meters=str(val_meters),
-                                memory=torch.cuda.max_memory_allocated() / (1024.0 ** 2),
+                                memory=torch.cuda.max_memory_allocated() / (1024.0**2),
                             )
                         )
 
