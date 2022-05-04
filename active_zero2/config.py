@@ -171,6 +171,13 @@ _C.PSMNetRange4.MAX_DISP = 0
 _C.PSMNetRange4.NUM_DISP = 0
 _C.PSMNetRange4.SET_ZERO = False
 
+_C.PSMNetDilation = CN()
+_C.PSMNetDilation.MIN_DISP = 0
+_C.PSMNetDilation.MAX_DISP = 0
+_C.PSMNetDilation.NUM_DISP = 0
+_C.PSMNetDilation.SET_ZERO = False
+_C.PSMNetDilation.DILATION = 3
+
 _C.SMDNet = CN()
 _C.SMDNet.OUTPUT = 'bimodal'
 _C.SMDNet.MAXDISP = 192
@@ -294,7 +301,7 @@ _C.TEST.BATCH_SIZE = 1
 _C.TEST.NUM_WORKERS = 1
 # The path of weights to be tested. "@" has similar syntax as OUTPUT_DIR.
 # If not set, the last checkpoint will be used by default.
-_C.TEST.WEIGHT = '/edward-slow-vol/checkpoints/smd_activezero2/model_005000.pth'
+_C.TEST.WEIGHT = ""
 
 _C.TEST.LOG_PERIOD = 10
 _C.TEST.METRIC = ""

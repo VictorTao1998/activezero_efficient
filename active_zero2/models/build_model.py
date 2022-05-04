@@ -14,6 +14,8 @@ def build_model(cfg):
         model = build_psmnetrange(cfg)
     elif cfg.MODEL_TYPE == "PSMNetRange4":
         model = build_psmnetrange4(cfg)
+    elif cfg.MODEL_TYPE == "PSMNetDilation":
+        model = build_psmnetdilation(cfg)
     elif cfg.MODEL_TYPE == "SMDNet":
         model = build_smdnet(cfg)
     elif cfg.MODEL_TYPE == "PSMNetDilation":
