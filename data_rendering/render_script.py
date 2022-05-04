@@ -26,6 +26,7 @@ if __name__ == "__main__":
     parser.add_argument("--rand-lighting", action="store_true")
     parser.add_argument("--primitives", action="store_true", help="use primitives")
     parser.add_argument("--primitives-v2", action="store_true", help="use primitives v2")
+    parser.add_argument("--rand-table", action="store_true", help="use random material for table")
     args = parser.parse_args()
 
     spp = 128
@@ -133,6 +134,7 @@ if __name__ == "__main__":
             primitives=args.primitives,
             primitives_v2=args.primitives_v2,
             rand_lighting=args.rand_lighting,
+            rand_table=args.rand_table,
         )
 
     renderer = None

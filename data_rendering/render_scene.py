@@ -23,6 +23,7 @@ def render_scene(
     primitives,
     primitives_v2,
     rand_lighting,
+        rand_table,
 ):
     materials_root = os.path.join(repo_root, "data_rendering/materials")
 
@@ -44,7 +45,10 @@ def render_scene(
     table_pose_np = np.loadtxt(os.path.join(repo_root, "data_rendering/materials/optical_table/pose.txt"))
     table_pose = sapien.Pose(table_pose_np[:3], table_pose_np[3:])
 
-    load_table(scene, os.path.join(repo_root, "data_rendering/materials/optical_table"), renderer, table_pose)
+    if rand_table:
+        load_rand_table(scene, os.path.join(repo_root, "data_rendering/materials/optical_table"), renderer, table_pose)
+    else:
+        load_table(scene, os.path.join(repo_root, "data_rendering/materials/optical_table"), renderer, table_pose)
 
     # Add camera
     cam_intrinsic_base = np.loadtxt(os.path.join(materials_root, "cam_intrinsic_base.txt"))
