@@ -171,6 +171,13 @@ _C.PSMNetRange4.MAX_DISP = 0
 _C.PSMNetRange4.NUM_DISP = 0
 _C.PSMNetRange4.SET_ZERO = False
 
+_C.PSMNetDilation = CN()
+_C.PSMNetDilation.MIN_DISP = 0
+_C.PSMNetDilation.MAX_DISP = 0
+_C.PSMNetDilation.NUM_DISP = 0
+_C.PSMNetDilation.SET_ZERO = False
+_C.PSMNetDilation.DILATION = 3
+
 # ---------------------------------------------------------------------------- #
 # Losses
 # ---------------------------------------------------------------------------- #
