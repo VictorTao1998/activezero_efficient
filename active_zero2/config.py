@@ -294,7 +294,7 @@ _C.TEST.BATCH_SIZE = 1
 _C.TEST.NUM_WORKERS = 1
 # The path of weights to be tested. "@" has similar syntax as OUTPUT_DIR.
 # If not set, the last checkpoint will be used by default.
-_C.TEST.WEIGHT = ""
+_C.TEST.WEIGHT = '/edward-slow-vol/checkpoints/smd_activezero2/model_005000.pth'
 
 _C.TEST.LOG_PERIOD = 10
 _C.TEST.METRIC = ""

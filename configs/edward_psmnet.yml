@@ -31,7 +31,7 @@ DATA:
   TEST:
     REAL:
       ROOT_DIR: "/messytable-slow-vol/messy-table-dataset/real_data_v10/"
-      SPLIT_FILE: "/messytable-slow-vol/messy-table-dataset/real_data_v10/test_list.txt"
+      SPLIT_FILE: "/messytable-slow-vol/messy-table-dataset/real_data_v10/test.txt"
       META_NAME: "meta.pkl"
       DEPTH_NAME: "depthL.png"
       LEFT_NAME: "1024_irL_real.png"
@@ -82,4 +82,4 @@ LOSS:
 TEST:
   NUM_WORKERS: 0
   MAX_DISP: 128
-  WEIGHT: "/home/rayu/Projects/active_zero2/outputs/example/model_050000.pth"
+  WEIGHT: "/edward-slow-vol/checkpoints/psmnet_activezero2/model_010000.pth"
