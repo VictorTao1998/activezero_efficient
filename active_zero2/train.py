@@ -453,10 +453,6 @@ if __name__ == "__main__":
                             loss += cfg.LOSS.SIM_DISP.WEIGHT * sim_disp
                             loss_dict["loss_sim_disp"] = sim_disp
 
-                        if cfg.LOSS.SIM_SMD.WEIGHT > 0:
-                            for error in pred_dict.values():
-                                loss += error
-
                     batch_time = time.time() - tic
                     val_meters.update(time=batch_time, data=data_time)
                     val_meters.update(**loss_dict)
