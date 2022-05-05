@@ -1,5 +1,4 @@
-# TO DO MOVE SELF.GETERROR OUT TO MAIN TRAINING LOOP AND DISCUSS HOW TO LINK THESE LOSSES TO ORIGINAL ONES
-
+import math
 import torch
 import torch.nn as nn
 from .Regressor import Regressor
@@ -122,3 +121,50 @@ class SMDHead(nn.Module):
         error = self.get_error()
 
         return error
+
+    def inference(self, height=1536, width=2048, num_samples=200000, num_out=1):
+        nx = np.linspace(0, width - 1, width)
+        ny = np.linspace(0, height - 1, height)
+        u, v = np.meshgrid(nx, ny)
+
+        coords = np.expand_dims(np.stack((u.flatten(), v.flatten()), axis=-1), 0)
+        batch_size, n_pts, _= coords.shape
+        coords = torch.Tensor(coords).float().cuda()
+        output = torch.zeros(num_out, math.ceil(width * height / num_samples), num_samples)
+
+        with torch.no_grad():
+            for i, p_split in enumerate(torch.split(coords.reshape(batch_size, -1, 2), int(num_samples / batch_size), dim=1)):
+                points = torch.transpose(p_split, 1, 2)
+                self.query(points.cuda())
+                preds = self.get_preds()
+                for k in range(num_out):
+                    output[k, i, :p_split.shape[1]] = preds[k].cuda()
+        res = []
+        for i in range(num_out):
+            res.append(output[i].view( 1, -1)[:,:n_pts].reshape(-1, height, width))
+        return res
+
+    def predict(self, data, superes_factor=1., compute_entropy=False):
+        output = {}
+        left = data['img_l']
+        right = data['img_r']
+        shape = left[0][0].shape
+
+        self.filter(left, right, phase='test')
+
+        num_out = {"standard": 1,
+                   "unimodal": 2,
+                   "bimodal": 7}
+        height = left[0].shape[1]
+        width = left[0].shape[2]
+
+        h = shape[1]
+        w = shape[0]
+        s = superes_factor
+
+        res = self.inference(height=int(height * superes_factor),
+                                   width=int(width * superes_factor),
+                                   num_out=num_out[self.output_representation])
+
+        output["pred_disp"] = to_numpy(res[0])
+        return output

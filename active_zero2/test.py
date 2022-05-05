@@ -163,7 +163,7 @@ if __name__ == "__main__":
                 data_batch["dir"] = data_dir
                 # Forward
                 if cfg.MODEL_TYPE == "SMDNet":
-                    # TODO
+                    pred_dict = model.predict(data_batch)
                 else:
                     pred_dict = model(data_batch)
                 metric.compute(
