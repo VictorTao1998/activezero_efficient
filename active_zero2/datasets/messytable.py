@@ -243,7 +243,7 @@ class MessyTableDataset(Dataset):
             data_dict["img_normal_l"] = torch.from_numpy(img_normal_l).float().permute(2, 0, 1)
         if self.label_name:
             data_dict["img_label_l"] = torch.from_numpy(img_label_l).long()
-        if self.sample_data:
+        if (self.mode == "train" or self.mode == "val") and self.sample_data:
             sample_data = self.sampling(data_dict)
             data_dict.update(sample_data)
         return data_dict

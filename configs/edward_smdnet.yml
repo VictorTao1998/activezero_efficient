@@ -82,4 +82,4 @@ LOSS:
 TEST:
   NUM_WORKERS: 0
   MAX_DISP: 128
-  WEIGHT: "/home/rayu/Projects/active_zero2/outputs/example/model_050000.pth"
+  WEIGHT: "/edward-slow-vol/checkpoints/smd_activezero2/model_010000.pth"
