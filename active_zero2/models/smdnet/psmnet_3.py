@@ -203,8 +203,8 @@ class PSMNet(nn.Module):
                 "pred1": pred1,
                 "pred2": pred2,
                 "pred3": pred3,
-                "cost3": torch.squeeze(smd_cost, 1),
-                "refimg_fea": refimg_feature,
+                "cost3": torch.squeeze(smd_cost, 1),  # (B, MAX_DISP//4, H, W)
+                "refimg_fea": refimg_feature,  # (B, C, H, W)
             }
         else:
             pred_dict = {

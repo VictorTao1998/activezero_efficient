@@ -179,14 +179,17 @@ _C.PSMNetDilation.SET_ZERO = False
 _C.PSMNetDilation.DILATION = 3
 
 _C.SMDNet = CN()
-_C.SMDNet.OUTPUT = 'bimodal'
+# data
+_C.SMDNet.NUM_SAMPLES = 0
+_C.SMDNet.DILATION = 10
+
+# network
+_C.SMDNet.OUTPUT_REPRESENTATION = "bimodal"
 _C.SMDNet.MAXDISP = 192
-_C.SMDNet.SUPERRES = 1
-_C.SMDNet.ASPECT = 1
 
 # flip the two truth values when validation
-_C.SMDNet.SINE = True
-_C.SMDNet.RESIDUAL = True
+_C.SMDNet.NO_SINE = False
+_C.SMDNet.NO_RESIDUAL = False
 
 _C.PSMNetDilation = CN()
 _C.PSMNetDilation.MIN_DISP = 0

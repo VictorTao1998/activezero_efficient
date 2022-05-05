@@ -153,9 +153,9 @@ if __name__ == "__main__":
     # Reset the random seed again in case the initialization of models changes the random state.
     set_random_seed(cfg.RNG_SEED)
     train_sim_dataset = build_dataset(cfg, mode="train", domain="sim")
-    train_real_dataset = None # build_dataset(cfg, mode="train", domain="real")
+    train_real_dataset = build_dataset(cfg, mode="train", domain="real")
     val_sim_dataset = build_dataset(cfg, mode="val", domain="sim")
-    val_real_dataset = None # build_dataset(cfg, mode="val", domain="real")
+    val_real_dataset = build_dataset(cfg, mode="val", domain="real")
     if is_distributed:
         if train_sim_dataset:
             train_sim_sampler = DistributedSampler(
@@ -342,9 +342,7 @@ if __name__ == "__main__":
                 sim_disp = model.compute_disp_loss(data_batch, pred_dict)
                 loss += cfg.LOSS.SIM_DISP.WEIGHT * sim_disp
                 loss_dict["loss_sim_disp"] = sim_disp
-            if cfg.LOSS.SIM_SMD.WEIGHT > 0:
-                for error in pred_dict.values():
-                    loss+= error
+
             loss_dict["loss_sim_total"] = loss
             loss.backward()
 
@@ -457,7 +455,7 @@ if __name__ == "__main__":
 
                         if cfg.LOSS.SIM_SMD.WEIGHT > 0:
                             for error in pred_dict.values():
-                                loss+=error
+                                loss += error
 
                     batch_time = time.time() - tic
                     val_meters.update(time=batch_time, data=data_time)

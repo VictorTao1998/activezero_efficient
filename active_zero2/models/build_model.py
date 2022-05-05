@@ -5,6 +5,7 @@ from active_zero2.models.psmnet_range.build_model import build_model as build_ps
 from active_zero2.models.psmnet_range_4.build_model import build_model as build_psmnetrange4
 from active_zero2.models.smdnet.build_model import build_model as build_smdnet
 
+
 def build_model(cfg):
     if cfg.MODEL_TYPE == "PSMNet":
         model = build_psmnet(cfg)

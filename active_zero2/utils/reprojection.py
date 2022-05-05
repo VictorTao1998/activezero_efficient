@@ -48,7 +48,6 @@ def compute_reproj_loss_patch(input_L, input_R, pred_disp_l, mask=None, ps=5):
     assert ps % 2 == 1
     bs, c, h, w = input_L.shape
     unfold_func = torch.nn.Unfold(kernel_size=(ps, ps), stride=1, padding=(ps - 1) // 2, dilation=1)
-    fold_func = torch.nn.Fold(output_size=(h + ps - 1, w + ps - 1), kernel_size=(ps, ps))
     input_L = unfold_func(input_L)
     input_R = unfold_func(input_R)
     input_L = input_L.reshape(bs, c * ps * ps, h, w)
@@ -61,6 +60,33 @@ def compute_reproj_loss_patch(input_L, input_R, pred_disp_l, mask=None, ps=5):
         mask = torch.ones_like(input_L_warped).type(torch.bool)
     reprojection_loss = F.mse_loss(input_L_warped[mask], input_L[mask])
 
+    return reprojection_loss
+
+
+def compute_reproj_loss_patch_points(input_L, input_R, points, pred_disp_points, height, width, ps=5):
+    assert ps % 2 == 1
+    bs, c, h, w = input_L.shape
+    unfold_func = torch.nn.Unfold(kernel_size=(ps, ps), stride=1, padding=(ps - 1) // 2, dilation=1)
+    input_L = unfold_func(input_L)
+    input_R = unfold_func(input_R)
+    input_L = input_L.reshape(bs, c * ps * ps, h, w)
+    input_R = input_R.reshape(bs, c * ps * ps, h, w)
+
+    u = points[:, 0:1, :] / (width - 1.0)
+    v = points[:, 1:2, :] / (height - 1.0)
+    pred_disp = pred_disp_points / (width - 1.0)
+
+    uv = torch.cat([u, v], 1).transpose(1, 2)
+    uv = uv.unsqueeze(1)  # (B, 1, N, 2)
+
+    uvd = torch.cat([u - pred_disp, v], 1).transpose(1, 2)
+    uvd = uvd.unsqueeze(1)
+
+    input_L_points = F.grid_sample(input_L, 2 * uv - 1, mode="bilinear", padding_mode="zeros", align_corners=True)
+    input_L_warped_points = F.grid_sample(
+        input_R, 2 * uvd - 1, mode="bilinear", padding_mode="zeros", align_corners=True
+    )
+    reprojection_loss = F.mse_loss(input_L_points, input_L_warped_points)
     return reprojection_loss
 
 
