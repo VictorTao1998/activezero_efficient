@@ -30,9 +30,9 @@ def get_random_sq_texture():
     return path
 
 
-num_env = 1000
+num_env = 10000
 
-renderer = VulkanRenderer()
+renderer = VulkanRenderer(offscreen_only=True)
 
 for i in range(6):
     img = cv2.imread(get_random_sq_texture())
@@ -44,7 +44,7 @@ for i in range(6):
     cv2.imwrite(os.path.join(CUR_DIR, f"{i}.png"), img)
 
 
-for e in tqdm(range(1000)):
+for e in tqdm(range(num_env)):
     renderer.create_ktx_environment_map(
         os.path.join(CUR_DIR, "0.png"),
         os.path.join(CUR_DIR, "1.png"),
