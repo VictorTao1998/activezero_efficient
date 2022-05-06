@@ -1,6 +1,10 @@
 from path import Path
 import random
+import sys
 import os
+import os.path as osp
+REPO_ROOT = os.path.abspath(osp.join(osp.dirname(__file__), ".."))
+sys.path.insert(0, REPO_ROOT)
 from sapien.core import VulkanRenderer
 from tqdm import tqdm
 import cv2
