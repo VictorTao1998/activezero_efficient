@@ -23,7 +23,8 @@ def render_scene(
     primitives,
     primitives_v2,
     rand_lighting,
-        rand_table,
+    rand_table,
+    rand_env,
 ):
     materials_root = os.path.join(repo_root, "data_rendering/materials")
 
@@ -35,12 +36,13 @@ def render_scene(
     scene_config.default_dynamic_friction = 0.5
     scene_config.default_static_friction = 0.5
     scene = sim.create_scene(scene_config)
-
-    ground_material = renderer.create_material()
-    ground_material.base_color = np.array([10, 10, 10, 256]) / 256
-    ground_material.specular = 0.5
-    scene.add_ground(-2.0, render_material=ground_material)
     scene.set_timestep(1 / 240)
+
+    if not rand_env:
+        ground_material = renderer.create_material()
+        ground_material.base_color = np.array([10, 10, 10, 256]) / 256
+        ground_material.specular = 0.5
+        scene.add_ground(-2.0, render_material=ground_material)
 
     table_pose_np = np.loadtxt(os.path.join(repo_root, "data_rendering/materials/optical_table/pose.txt"))
     table_pose = sapien.Pose(table_pose_np[:3], table_pose_np[3:])
@@ -81,7 +83,31 @@ def render_scene(
     )
 
     # Add lights
-    if rand_lighting:
+    if rand_env:
+        ambient_light = np.random.rand(3)
+        scene.set_ambient_light(ambient_light)
+        scene.set_environment_map(get_random_env_file())
+
+        # change light
+        def lights_on():
+            ambient_light = np.random.rand(3)
+            scene.set_ambient_light(ambient_light)
+            scene.set_environment_map(get_random_env_file())
+
+            alight.set_color([0.0, 0.0, 0.0])
+
+        def lights_off():
+            ambient_light = np.random.rand(3) * 0.05
+            scene.set_ambient_light(ambient_light)
+            alight_color = np.random.rand(3) * np.array((60, 20, 20)) + np.array([30, 10, 10])
+            scene.set_environment_map(get_random_env_file())
+
+            alight.set_color(alight_color)
+
+        def light_off_without_alight():
+            alight.set_color([0.0, 0.0, 0.0])
+
+    elif rand_lighting:
         ambient_light = np.random.rand(3)
         scene.set_ambient_light(ambient_light)
         height = np.random.rand() + 2

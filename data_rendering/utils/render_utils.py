@@ -35,6 +35,10 @@ TEXTURE_LIST = "/messytable-slow/mini-imagenet-tools/mini_imagenet_list.txt"
 OBJECT_DIR = "/rayc-fast/ICCV2021_Diagnosis/ocrtoc_materials/models/"
 OBJECT_CSV_PATH = "/rayc-fast/ICCV2021_Diagnosis/ocrtoc_materials/objects.csv"
 SCENE_DIR = "/rayc-fast/ICCV2021_Diagnosis/ocrtoc_materials/scenes"
+TEXTURE_SQ_FOLDER = "//messytable-slow/mini-imagenet-tools/mini_imagenet_square/"
+TEXTURE_SQ_LIST = "//messytable-slow/mini-imagenet-tools/mini_imagenet_square/list.txt"
+ENV_MAP_FOLDER = "/messytable-slow/mini-imagenet-tools/rand_env/"
+ENV_MAP_LIST = "/messytable-slow/mini-imagenet-tools/rand_env/list.txt"
 
 # TEXTURE_FOLDER = "/media/DATA/LINUX_DATA/activezero2/datasets/mini_imagenet/"
 # TEXTURE_LIST = "/media/DATA/LINUX_DATA/activezero2/datasets/mini_imagenet_list.txt"
@@ -131,12 +135,28 @@ def get_obj_id_to_seg_id(seg_id_to_obj_name):
 with open(TEXTURE_LIST, "r") as f:
     texture_list = [line.strip() for line in f]
 
+with open(TEXTURE_SQ_LIST, "r") as f:
+    texture_sq_list = [line.strip() for line in f]
+
+with open(ENV_MAP_LIST, "r") as f:
+    env_list = [line.strip() for line in f]
 
 def get_random_texture():
     random_file = random.choice(texture_list)
     path = os.path.join(TEXTURE_FOLDER, random_file)
     return path
 
+
+def get_random_sq_texture():
+    random_file = random.choice(texture_sq_list)
+    path = os.path.join(TEXTURE_SQ_FOLDER, random_file)
+    return path
+
+
+def get_random_env_file():
+    random_file = random.choice(env_list)
+    path = os.path.join(ENV_MAP_FOLDER, random_file)
+    return path
 
 def get_random_bin_texture():
     random_file = random.choice(texture_list)

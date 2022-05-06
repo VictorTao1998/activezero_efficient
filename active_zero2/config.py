@@ -182,12 +182,9 @@ _C.SMDNet = CN()
 # data
 _C.SMDNet.NUM_SAMPLES = 0
 _C.SMDNet.DILATION = 10
-
 # network
 _C.SMDNet.OUTPUT_REPRESENTATION = "bimodal"
 _C.SMDNet.MAX_DISP = 192
-
-# flip the two truth values when validation
 _C.SMDNet.NO_SINE = False
 _C.SMDNet.NO_RESIDUAL = False
 
