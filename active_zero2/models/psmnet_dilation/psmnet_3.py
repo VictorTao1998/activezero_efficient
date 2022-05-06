@@ -1,8 +1,3 @@
-"""
-Author: Isabella Liu 11/10/21
-Feature: Hourglass and PSMNet (stacked hourglass) module without small transform layers
-"""
-
 import math
 
 import torch

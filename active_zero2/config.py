@@ -186,6 +186,15 @@ _C.PSMNetKPAC.SET_ZERO = False
 _C.PSMNetKPAC.DILATION_LIST = (3, 5, 9)
 _C.PSMNetKPAC.DILATION = 3
 
+_C.PSMNetGrad = CN()
+_C.PSMNetGrad.MIN_DISP = 0
+_C.PSMNetGrad.MAX_DISP = 0
+_C.PSMNetGrad.NUM_DISP = 0
+_C.PSMNetGrad.SET_ZERO = False
+_C.PSMNetGrad.DILATION = 3
+_C.PSMNetGrad.LOSS_WEIGHT = 0.0
+_C.PSMNetGrad.EPSILON = 1.0
+
 _C.SMDNet = CN()
 # data
 _C.SMDNet.NUM_SAMPLES = 0

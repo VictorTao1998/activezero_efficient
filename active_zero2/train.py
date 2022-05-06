@@ -343,6 +343,12 @@ if __name__ == "__main__":
                 loss += cfg.LOSS.SIM_DISP.WEIGHT * sim_disp
                 loss_dict["loss_sim_disp"] = sim_disp
 
+            if cfg.MODEL_TYPE == "PSMNetGrad":
+                if cfg.PSMNetGrad.LOSS_WEIGHT > 0:
+                    grad_loss = model.compute_grad_loss(data_batch, pred_dict)
+                    loss += cfg.PSMNetGrad.LOSS_WEIGHT * grad_loss
+                    loss_dict["loss_sim_grad"] = grad_loss
+
             loss_dict["loss_sim_total"] = loss
             loss.backward()
 
@@ -372,6 +378,13 @@ if __name__ == "__main__":
                 real_disp = model.compute_disp_loss(data_batch, pred_dict)
                 loss += cfg.LOSS.REAL_DISP.WEIGHT * real_disp
                 loss_dict["loss_real_disp"] = real_disp
+
+            if cfg.MODEL_TYPE == "PSMNetGrad":
+                if cfg.PSMNetGrad.LOSS_WEIGHT > 0:
+                    grad_loss = model.compute_grad_loss(data_batch, pred_dict)
+                    loss += cfg.PSMNetGrad.LOSS_WEIGHT * grad_loss
+                    loss_dict["loss_real_grad"] = grad_loss
+
             loss_dict["loss_real_total"] = loss
             loss.backward()
 

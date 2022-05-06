@@ -1,58 +1,38 @@
-"""
-"""
-
 import math
-from typing import List
 
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.nn.init as init
 
-from active_zero2.models.psmnet_kpac.psmnet_submodule_3 import *
+from active_zero2.models.psmnet_grad.psmnet_submodule_3 import *
+from active_zero2.models.psmnet_grad.utils import DispGrad
 from active_zero2.utils.reprojection import compute_reproj_loss_patch
 
 
-class kpac3d(nn.Module):
-    def __init__(self, inplanes, outplanes, stride=2, dilation_list=(1, 3, 5, 9)):
-        super(kpac3d, self).__init__()
-        self.inplanes = inplanes
-        self.outplanes = outplanes
-        self.stride = stride
-        self.dilation_list = dilation_list
-        self.conv3d_0_weight = nn.Parameter(torch.randn(outplanes, inplanes, 3, 3, 3))
-        self.conv3d_bn = nn.Sequential(nn.BatchNorm3d(outplanes * len(dilation_list)), nn.ReLU(inplace=False))
-        self.conv3d_1 = nn.Sequential(
-            nn.Conv3d(outplanes * len(dilation_list), outplanes, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm3d(outplanes),
-            nn.ReLU(inplace=False),
-        )
-        self._init_weight()
-
-    def forward(self, x):
-        y = []
-        for d in self.dilation_list:
-            y.append(F.conv3d(x, self.conv3d_0_weight, stride=self.stride, padding=d, dilation=d))
-        y = torch.cat(y, dim=1)
-        y = self.conv3d_bn(y)
-        y = self.conv3d_1(y)
-        return y
-
-    def _init_weight(self):
-        init.kaiming_uniform_(self.conv3d_0_weight, a=math.sqrt(5))
-
-
 class hourglass(nn.Module):
-    def __init__(self, inplanes, dilation=3, dilation_list=(1, 3, 5, 9)):
+    def __init__(self, inplanes, dilation):
         super(hourglass, self).__init__()
 
-        self.conv1 = kpac3d(inplanes, inplanes * 2, stride=2, dilation_list=dilation_list)
+        self.conv1 = nn.Sequential(
+            nn.Conv3d(inplanes, inplanes * 2, kernel_size=3, stride=2, padding=dilation, dilation=dilation),
+            nn.BatchNorm3d(inplanes * 2),
+            nn.ReLU(inplace=True),
+        )
 
-        self.conv2 = kpac3d(inplanes * 2, inplanes * 2, stride=1, dilation_list=dilation_list)
+        self.conv2 = nn.Sequential(
+            nn.Conv3d(inplanes * 2, inplanes * 2, kernel_size=3, stride=1, padding=dilation, dilation=dilation),
+            nn.BatchNorm3d(inplanes * 2),
+        )
 
-        self.conv3 = kpac3d(inplanes * 2, inplanes * 2, stride=2, dilation_list=dilation_list)
+        self.conv3 = nn.Sequential(
+            nn.Conv3d(inplanes * 2, inplanes * 2, kernel_size=3, stride=2, padding=dilation, dilation=dilation),
+            nn.BatchNorm3d(inplanes * 2),
+            nn.ReLU(inplace=True),
+        )
 
-        self.conv4 = kpac3d(inplanes * 2, inplanes * 2, stride=1, dilation_list=dilation_list)
+        self.conv4 = nn.Sequential(
+            nn.Conv3d(inplanes * 2, inplanes * 2, kernel_size=3, stride=1, padding=dilation, dilation=dilation),
+            nn.BatchNorm3d(inplanes * 2, inplanes * 2),
+            nn.ReLU(inplace=True),
+        )
 
         self.conv5 = nn.Sequential(
             nn.ConvTranspose3d(
@@ -86,32 +66,38 @@ class hourglass(nn.Module):
         out = self.conv1(x)
         pre = self.conv2(out)
         if postqu is not None:
-            pre = F.relu(pre + postqu, inplace=False)
+            pre = F.relu(pre + postqu, inplace=True)
         else:
-            pre = F.relu(pre, inplace=False)
+            pre = F.relu(pre, inplace=True)
 
         out = self.conv3(pre)
         out = self.conv4(out)
 
         if presqu is not None:
-            post = F.relu(self.conv5(out) + presqu, inplace=False)
+            post = F.relu(self.conv5(out) + presqu, inplace=True)
         else:
-            post = F.relu(self.conv5(out) + pre, inplace=False)
+            post = F.relu(self.conv5(out) + pre, inplace=True)
 
         out = self.conv6(post)
         return out, pre, post
 
 
-class PSMNetKPAC(nn.Module):
+class PSMNetGrad(nn.Module):
     def __init__(
-        self, min_disp: float, max_disp: float, num_disp: int, set_zero: bool, dilation: int, dilation_list: List[int]
+        self,
+        min_disp: float,
+        max_disp: float,
+        num_disp: int,
+        set_zero: bool,
+        dilation: int,
+        epsilon: float = 1.0,
     ):
-        super(PSMNetKPAC, self).__init__()
+        super(PSMNetGrad, self).__init__()
         self.min_disp = min_disp
         self.max_disp = max_disp
         self.num_disp = num_disp
         self.dilation = dilation
-        self.dilation_list = dilation_list
+        self.epsilon = epsilon  # for grad exp weight
         assert num_disp % 4 == 0, "Num_disp % 4 should be 0"
         self.num_disp_4 = num_disp // 4
         self.set_zero = set_zero  # set zero for invalid reference image cost volume
@@ -124,33 +110,33 @@ class PSMNetKPAC(nn.Module):
 
         self.dres0 = nn.Sequential(
             convbn_3d(64, 32, 3, 1, 1),
-            nn.ReLU(inplace=False),
+            nn.ReLU(inplace=True),
             convbn_3d(32, 32, 3, 1, 1),
-            nn.ReLU(inplace=False),
+            nn.ReLU(inplace=True),
         )
         self.dres1 = nn.Sequential(
             convbn_3d(32, 32, 3, 1, 1),
-            nn.ReLU(inplace=False),
+            nn.ReLU(inplace=True),
             convbn_3d(32, 32, 3, 1, 1),
         )
 
-        self.dres2 = hourglass(32, dilation, dilation_list)
-        self.dres3 = hourglass(32, dilation, dilation_list)
-        self.dres4 = hourglass(32, dilation, dilation_list)
+        self.dres2 = hourglass(32, dilation)
+        self.dres3 = hourglass(32, dilation)
+        self.dres4 = hourglass(32, dilation)
 
         self.classif1 = nn.Sequential(
             convbn_3d(32, 32, 3, 1, 1),
-            nn.ReLU(inplace=False),
+            nn.ReLU(inplace=True),
             nn.Conv3d(32, 1, kernel_size=3, padding=1, stride=1, bias=False),
         )
         self.classif2 = nn.Sequential(
             convbn_3d(32, 32, 3, 1, 1),
-            nn.ReLU(inplace=False),
+            nn.ReLU(inplace=True),
             nn.Conv3d(32, 1, kernel_size=3, padding=1, stride=1, bias=False),
         )
         self.classif3 = nn.Sequential(
             convbn_3d(32, 32, 3, 1, 1),
-            nn.ReLU(inplace=False),
+            nn.ReLU(inplace=True),
             nn.Conv3d(32, 1, kernel_size=3, padding=1, stride=1, bias=False),
         )
 
@@ -169,6 +155,8 @@ class PSMNetKPAC(nn.Module):
                 m.bias.data.zero_()
             elif isinstance(m, nn.Linear):
                 m.bias.data.zero_()
+
+        self.disp_grad = DispGrad()
 
     def forward(self, data_batch):
         img_L, img_R = data_batch["img_l"], data_batch["img_r"]
@@ -309,9 +297,25 @@ class PSMNetKPAC(nn.Module):
                     )
             return loss_reproj
 
+    def compute_grad_loss(self, data_batch, pred_dict):
+        disp_pred = pred_dict["pred3"]
+        disp_grad_pred = self.disp_grad(disp_pred)
+
+        if "img_disp_l" in data_batch:
+            disp_gt = data_batch["img_disp_l"]
+            disp_grad_gt = self.disp_grad(disp_gt)
+            grad_diff = torch.abs(disp_grad_pred - disp_grad_gt)
+            grad_diff = grad_diff * torch.exp(-torch.abs(disp_grad_gt) * self.epsilon)
+            mask = (disp_gt < self.max_disp) * (disp_gt > self.min_disp)
+            mask.detach()
+            loss = torch.mean(grad_diff * mask)
+        else:
+            loss = torch.mean(torch.abs(disp_grad_pred))
+        return loss
+
 
 if __name__ == "__main__":
-    model = PSMNetKPAC(min_disp=12, max_disp=96, num_disp=128, set_zero=False, dilation=3, dilation_list=(1, 5, 9))
+    model = PSMNetGrad(min_disp=12, max_disp=96, num_disp=128, set_zero=False, dilation=3)
     model = model.cuda()
     model.eval()
 
@@ -323,3 +327,6 @@ if __name__ == "__main__":
 
     for k, v in pred.items():
         print(k, v.shape)
+
+    grad_loss = model.compute_grad_loss(data_batch, pred)
+    print("grad loss: ", grad_loss)
