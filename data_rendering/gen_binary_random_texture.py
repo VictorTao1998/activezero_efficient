@@ -9,7 +9,11 @@ import numpy as np
 from PIL import Image
 from tqdm import tqdm
 
-from data_rendering.utils.render_utils import TEXTURE_FOLDER, texture_list
+from data_rendering.utils.folder_paths import TEXTURE_FOLDER, TEXTURE_LIST
+
+
+with open(TEXTURE_LIST, "r") as f:
+    texture_list = [line.strip() for line in f]
 
 for l in tqdm(texture_list):
     img = cv2.imread(osp.join(TEXTURE_FOLDER, l), cv2.IMREAD_GRAYSCALE)

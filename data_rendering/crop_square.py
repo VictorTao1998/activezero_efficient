@@ -2,11 +2,12 @@ import cv2
 import sys
 import os
 import os.path as osp
+
 REPO_ROOT = os.path.abspath(osp.join(osp.dirname(__file__), ".."))
 sys.path.insert(0, REPO_ROOT)
 from tqdm import tqdm
 from path import Path
-from data_rendering.utils.render_utils import TEXTURE_FOLDER, TEXTURE_LIST, TEXTURE_SQ_FOLDER, TEXTURE_SQ_LIST
+from data_rendering.utils.folder_paths import TEXTURE_FOLDER, TEXTURE_LIST, TEXTURE_SQ_FOLDER, TEXTURE_SQ_LIST
 
 resolution = 256
 Path(TEXTURE_SQ_FOLDER).makedirs_p()

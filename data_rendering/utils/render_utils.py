@@ -12,6 +12,7 @@ import sapien.core as sapien
 import transforms3d as t3d
 from path import Path
 from sapien.core import Pose
+from data_rendering.utils.folder_paths import *
 
 MAX_DEPTH = 2.0
 
@@ -30,25 +31,8 @@ TRANSMISSION_MAX = 1.0
 PRIMITIVE_MIN = 25
 PRIMITIVE_MAX = 50
 
-TEXTURE_FOLDER = "/messytable-slow/mini-imagenet-tools/mini_imagenet/"
-TEXTURE_LIST = "/messytable-slow/mini-imagenet-tools/mini_imagenet_list.txt"
-OBJECT_DIR = "/rayc-fast/ICCV2021_Diagnosis/ocrtoc_materials/models/"
-OBJECT_CSV_PATH = "/rayc-fast/ICCV2021_Diagnosis/ocrtoc_materials/objects.csv"
-SCENE_DIR = "/rayc-fast/ICCV2021_Diagnosis/ocrtoc_materials/scenes"
-TEXTURE_SQ_FOLDER = "/messytable-slow/mini-imagenet-tools/mini_imagenet_square/"
-TEXTURE_SQ_LIST = "/messytable-slow/mini-imagenet-tools/mini_imagenet_square/list.txt"
-ENV_MAP_FOLDER = "/messytable-slow/mini-imagenet-tools/rand_env/"
-ENV_MAP_LIST = "/messytable-slow/mini-imagenet-tools/rand_env/list.txt"
 
-# TEXTURE_FOLDER = "/media/DATA/LINUX_DATA/activezero2/datasets/mini_imagenet/"
-# TEXTURE_LIST = "/media/DATA/LINUX_DATA/activezero2/datasets/mini_imagenet_list.txt"
-# OBJECT_DIR = "/home/rayu/Projects/ICCV2021_Diagnosis/ocrtoc_materials/models/"
-# OBJECT_CSV_PATH = "/home/rayu/Projects/ICCV2021_Diagnosis/ocrtoc_materials/objects.csv"
-# SCENE_DIR = "/home/rayu/Projects/ICCV2021_Diagnosis/ocrtoc_materials/scenes"
-# TEXTURE_SQ_FOLDER = "/media/DATA/LINUX_DATA/activezero2/datasets/mini_imagenet_square/"
-# TEXTURE_SQ_LIST = "/media/DATA/LINUX_DATA/activezero2/datasets/mini_imagenet_square/list.txt"
-# ENV_MAP_FOLDER = "/media/DATA/LINUX_DATA/activezero2/datasets/rand_env/"
-# ENV_MAP_LIST = "/media/DATA/LINUX_DATA/activezero2/datasets/rand_env/list.txt"
+
 
 def parse_csv(filename):
     """Parse the CSV file to acquire the information of objects used in TOC.
@@ -144,6 +128,7 @@ with open(TEXTURE_SQ_LIST, "r") as f:
 with open(ENV_MAP_LIST, "r") as f:
     env_list = [line.strip() for line in f]
 
+
 def get_random_texture():
     random_file = random.choice(texture_list)
     path = os.path.join(TEXTURE_FOLDER, random_file)
@@ -160,6 +145,7 @@ def get_random_env_file():
     random_file = random.choice(env_list)
     path = os.path.join(ENV_MAP_FOLDER, random_file)
     return path
+
 
 def get_random_bin_texture():
     random_file = random.choice(texture_list)

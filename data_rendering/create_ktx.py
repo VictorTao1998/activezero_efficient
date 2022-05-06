@@ -12,7 +12,7 @@ import numpy as np
 
 CUR_DIR = os.path.dirname(__file__)
 
-from data_rendering.utils.render_utils import TEXTURE_SQ_FOLDER, TEXTURE_SQ_LIST, ENV_MAP_FOLDER, ENV_MAP_LIST
+from data_rendering.utils.folder_paths import TEXTURE_SQ_FOLDER, TEXTURE_SQ_LIST, ENV_MAP_FOLDER, ENV_MAP_LIST
 
 # ENV_MAP_FOLDER = "/media/DATA/LINUX_DATA/activezero2/datasets/rand_env/"
 Path(ENV_MAP_FOLDER).makedirs_p()
