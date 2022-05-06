@@ -21,11 +21,11 @@ class kpac3d(nn.Module):
         self.stride = stride
         self.dilation_list = dilation_list
         self.conv3d_0_weight = nn.Parameter(torch.randn(outplanes, inplanes, 3, 3, 3))
-        self.conv3d_bn = nn.Sequential(nn.BatchNorm3d(outplanes * len(dilation_list)), nn.ReLU(inplace=True))
+        self.conv3d_bn = nn.Sequential(nn.BatchNorm3d(outplanes * len(dilation_list)), nn.ReLU(inplace=False))
         self.conv3d_1 = nn.Sequential(
             nn.Conv3d(outplanes * len(dilation_list), outplanes, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm3d(outplanes),
-            nn.ReLU(inplace=True),
+            nn.ReLU(inplace=False),
         )
         self._init_weight()
 
@@ -86,17 +86,17 @@ class hourglass(nn.Module):
         out = self.conv1(x)
         pre = self.conv2(out)
         if postqu is not None:
-            pre = F.relu(pre + postqu, inplace=True)
+            pre = F.relu(pre + postqu, inplace=False)
         else:
-            pre = F.relu(pre, inplace=True)
+            pre = F.relu(pre, inplace=False)
 
         out = self.conv3(pre)
         out = self.conv4(out)
 
         if presqu is not None:
-            post = F.relu(self.conv5(out) + presqu, inplace=True)
+            post = F.relu(self.conv5(out) + presqu, inplace=False)
         else:
-            post = F.relu(self.conv5(out) + pre, inplace=True)
+            post = F.relu(self.conv5(out) + pre, inplace=False)
 
         out = self.conv6(post)
         return out, pre, post
@@ -124,13 +124,13 @@ class PSMNetKPAC(nn.Module):
 
         self.dres0 = nn.Sequential(
             convbn_3d(64, 32, 3, 1, 1),
-            nn.ReLU(inplace=True),
+            nn.ReLU(inplace=False),
             convbn_3d(32, 32, 3, 1, 1),
-            nn.ReLU(inplace=True),
+            nn.ReLU(inplace=False),
         )
         self.dres1 = nn.Sequential(
             convbn_3d(32, 32, 3, 1, 1),
-            nn.ReLU(inplace=True),
+            nn.ReLU(inplace=False),
             convbn_3d(32, 32, 3, 1, 1),
         )
 
@@ -140,17 +140,17 @@ class PSMNetKPAC(nn.Module):
 
         self.classif1 = nn.Sequential(
             convbn_3d(32, 32, 3, 1, 1),
-            nn.ReLU(inplace=True),
+            nn.ReLU(inplace=False),
             nn.Conv3d(32, 1, kernel_size=3, padding=1, stride=1, bias=False),
         )
         self.classif2 = nn.Sequential(
             convbn_3d(32, 32, 3, 1, 1),
-            nn.ReLU(inplace=True),
+            nn.ReLU(inplace=False),
             nn.Conv3d(32, 1, kernel_size=3, padding=1, stride=1, bias=False),
         )
         self.classif3 = nn.Sequential(
             convbn_3d(32, 32, 3, 1, 1),
-            nn.ReLU(inplace=True),
+            nn.ReLU(inplace=False),
             nn.Conv3d(32, 1, kernel_size=3, padding=1, stride=1, bias=False),
         )
 
