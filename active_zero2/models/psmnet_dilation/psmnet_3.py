@@ -7,7 +7,7 @@ import math
 
 import torch
 
-from active_zero2.models.psmnet_range.psmnet_submodule_3 import *
+from active_zero2.models.psmnet_dilation.psmnet_submodule_3 import *
 from active_zero2.utils.reprojection import compute_reproj_loss_patch
 
 

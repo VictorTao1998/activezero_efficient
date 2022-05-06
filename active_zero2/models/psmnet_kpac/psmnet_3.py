@@ -1,43 +1,66 @@
 """
-Author: Isabella Liu 11/10/21
-Feature: Hourglass and PSMNet (stacked hourglass) module without small transform layers
 """
 
 import math
+from typing import List
 
 import torch
+import torch.nn as nn
+import torch.nn.init as init
+import torch.nn.functional as F
 
-from active_zero2.models.psmnet_range_4.psmnet_submodule_3 import *
+from active_zero2.models.psmnet_kpac.psmnet_submodule_3 import *
 from active_zero2.utils.reprojection import compute_reproj_loss_patch
 
 
+class kpac3d(nn.Module):
+    def __init__(self, inplanes, outplanes, stride=2, dilation_list=(1, 3, 5, 9)):
+        super(kpac3d, self).__init__()
+        self.inplanes = inplanes
+        self.outplanes = outplanes
+        self.stride = stride
+        self.dilation_list = dilation_list
+        self.conv3d_0_weight = nn.Parameter(torch.randn(outplanes, inplanes, 3, 3, 3))
+        self.conv3d_bn = nn.Sequential(nn.BatchNorm3d(outplanes * len(dilation_list)), nn.ReLU(inplace=True))
+        self.conv3d_1 = nn.Sequential(
+            nn.Conv3d(outplanes * len(dilation_list), outplanes, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm3d(outplanes),
+            nn.ReLU(inplace=True),
+        )
+        self._init_weight()
+
+    def forward(self, x):
+        y = []
+        for d in self.dilation_list:
+            y.append(F.conv3d(x, self.conv3d_0_weight, stride=self.stride, padding=d, dilation=d))
+        y = torch.cat(y, dim=1)
+        y = self.conv3d_bn(y)
+        y = self.conv3d_1(y)
+        return y
+
+    def _init_weight(self):
+        init.kaiming_uniform_(self.conv3d_0_weight, a=math.sqrt(5))
+
+
 class hourglass(nn.Module):
-    def __init__(self, inplanes):
+    def __init__(self, inplanes, dilation=3, dilation_list=(1, 3, 5, 9)):
         super(hourglass, self).__init__()
 
-        self.conv1 = nn.Sequential(
-            convbn_3d(inplanes, inplanes * 2, kernel_size=3, stride=2, pad=1),
-            nn.ReLU(inplace=True),
-        )
+        self.conv1 = kpac3d(inplanes, inplanes * 2, stride=2, dilation_list=dilation_list)
 
-        self.conv2 = convbn_3d(inplanes * 2, inplanes * 2, kernel_size=3, stride=1, pad=1)
+        self.conv2 = kpac3d(inplanes * 2, inplanes * 2, stride=1, dilation_list=dilation_list)
 
-        self.conv3 = nn.Sequential(
-            convbn_3d(inplanes * 2, inplanes * 2, kernel_size=3, stride=2, pad=1),
-            nn.ReLU(inplace=True),
-        )
+        self.conv3 = kpac3d(inplanes * 2, inplanes * 2, stride=2, dilation_list=dilation_list)
 
-        self.conv4 = nn.Sequential(
-            convbn_3d(inplanes * 2, inplanes * 2, kernel_size=3, stride=1, pad=1),
-            nn.ReLU(inplace=True),
-        )
+        self.conv4 = kpac3d(inplanes * 2, inplanes * 2, stride=1, dilation_list=dilation_list)
 
         self.conv5 = nn.Sequential(
             nn.ConvTranspose3d(
                 inplanes * 2,
                 inplanes * 2,
                 kernel_size=3,
-                padding=1,
+                padding=dilation,
+                dilation=dilation,
                 output_padding=1,
                 stride=2,
                 bias=False,
@@ -50,7 +73,8 @@ class hourglass(nn.Module):
                 inplanes * 2,
                 inplanes,
                 kernel_size=3,
-                padding=1,
+                padding=dilation,
+                dilation=dilation,
                 output_padding=1,
                 stride=2,
                 bias=False,
@@ -78,19 +102,23 @@ class hourglass(nn.Module):
         return out, pre, post
 
 
-class PSMNetRange4(nn.Module):
-    def __init__(self, min_disp: float, max_disp: float, num_disp: int, set_zero: bool):
-        super(PSMNetRange4, self).__init__()
+class PSMNetKPAC(nn.Module):
+    def __init__(
+        self, min_disp: float, max_disp: float, num_disp: int, set_zero: bool, dilation: int, dilation_list: List[int]
+    ):
+        super(PSMNetKPAC, self).__init__()
         self.min_disp = min_disp
         self.max_disp = max_disp
         self.num_disp = num_disp
+        self.dilation = dilation
+        self.dilation_list = dilation_list
         assert num_disp % 4 == 0, "Num_disp % 4 should be 0"
         self.num_disp_4 = num_disp // 4
         self.set_zero = set_zero  # set zero for invalid reference image cost volume
 
         self.disp_list = torch.linspace(min_disp, max_disp, num_disp)
         self.disp_list_4 = torch.linspace(min_disp, max_disp, self.num_disp_4) / 4
-        self.disp_regression = DisparityRegression(min_disp, max_disp, self.num_disp_4)
+        self.disp_regression = DisparityRegression(min_disp, max_disp, num_disp)
 
         self.feature_extraction = FeatureExtraction()
 
@@ -106,9 +134,9 @@ class PSMNetRange4(nn.Module):
             convbn_3d(32, 32, 3, 1, 1),
         )
 
-        self.dres2 = hourglass(32)
-        self.dres3 = hourglass(32)
-        self.dres4 = hourglass(32)
+        self.dres2 = hourglass(32, dilation, dilation_list)
+        self.dres3 = hourglass(32, dilation, dilation_list)
+        self.dres4 = hourglass(32, dilation, dilation_list)
 
         self.classif1 = nn.Sequential(
             convbn_3d(32, 32, 3, 1, 1),
@@ -194,6 +222,19 @@ class PSMNetRange4(nn.Module):
         cost3 = self.classif3(out3) + cost2
 
         if self.training:
+            cost1 = F.interpolate(
+                cost1,
+                (self.num_disp, 4 * H, 4 * W),
+                mode="trilinear",
+                align_corners=False,
+            )
+            cost2 = F.interpolate(
+                cost2,
+                (self.num_disp, 4 * H, 4 * W),
+                mode="trilinear",
+                align_corners=False,
+            )
+
             cost1 = torch.squeeze(cost1, 1)
             pred1 = F.softmax(cost1, dim=1)
             pred1 = self.disp_regression(pred1)
@@ -202,6 +243,7 @@ class PSMNetRange4(nn.Module):
             pred2 = F.softmax(cost2, dim=1)
             pred2 = self.disp_regression(pred2)
 
+        cost3 = F.interpolate(cost3, (self.num_disp, 4 * H, 4 * W), mode="trilinear", align_corners=False)
         cost3 = torch.squeeze(cost3, 1)
         pred3 = F.softmax(cost3, dim=1)
 
@@ -224,7 +266,6 @@ class PSMNetRange4(nn.Module):
 
     def compute_disp_loss(self, data_batch, pred_dict):
         disp_gt = data_batch["img_disp_l"]
-        disp_gt = F.interpolate(disp_gt, size=(64, 128), mode="nearest")
         # Get stereo loss on sim
         # Note in training we do not exclude bg
         mask = (disp_gt < self.max_disp) * (disp_gt > self.min_disp)
@@ -239,19 +280,16 @@ class PSMNetRange4(nn.Module):
     def compute_reproj_loss(self, data_batch, pred_dict, use_mask: bool, patch_size: int, only_last_pred: bool):
         if use_mask:
             disp_gt = data_batch["img_disp_l"]
-            disp_gt = F.interpolate(disp_gt, size=(64, 128), mode="nearest", align_corners=False)
             # Get stereo loss on sim
             # Note in training we do not exclude bg
             mask = (disp_gt < self.max_disp) * (disp_gt > self.min_disp)
             mask.detach()
         else:
             mask = None
-        img_pattern_l = F.interpolate(data_batch["img_pattern_l"], size=(64, 128), mode="bilinear", align_corners=False)
-        img_pattern_r = F.interpolate(data_batch["img_pattern_r"], size=(64, 128), mode="bilinear", align_corners=False)
         if only_last_pred:
             loss_reproj = compute_reproj_loss_patch(
-                img_pattern_l,
-                img_pattern_r,
+                data_batch["img_pattern_l"],
+                data_batch["img_pattern_r"],
                 pred_disp_l=pred_dict["pred3"],
                 mask=mask,
                 ps=patch_size,
@@ -263,10 +301,25 @@ class PSMNetRange4(nn.Module):
             for pred_name, loss_weight in zip(["pred1", "pred2", "pred3"], [0.5, 0.7, 1.0]):
                 if pred_name in pred_dict:
                     loss_reproj += loss_weight * compute_reproj_loss_patch(
-                        img_pattern_l,
-                        img_pattern_r,
+                        data_batch["img_pattern_l"],
+                        data_batch["img_pattern_r"],
                         pred_disp_l=pred_dict[pred_name],
                         mask=mask,
                         ps=patch_size,
                     )
             return loss_reproj
+
+
+if __name__ == "__main__":
+    model = PSMNetKPAC(min_disp=12, max_disp=96, num_disp=128, set_zero=False, dilation=3, dilation_list=(1, 5, 9))
+    model = model.cuda()
+    model.eval()
+
+    data_batch = {
+        "img_l": torch.rand(1, 1, 256, 512).cuda(),
+        "img_r": torch.rand(1, 1, 256, 512).cuda(),
+    }
+    pred = model(data_batch)
+
+    for k, v in pred.items():
+        print(k, v.shape)

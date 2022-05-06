@@ -4,6 +4,7 @@ from active_zero2.models.psmnet_dilation.build_model import build_model as build
 from active_zero2.models.psmnet_range.build_model import build_model as build_psmnetrange
 from active_zero2.models.psmnet_range_4.build_model import build_model as build_psmnetrange4
 from active_zero2.models.smdnet.build_model import build_model as build_smdnet
+from active_zero2.models.psmnet_kpac.build_model import build_model as build_psmnetkpac
 
 
 def build_model(cfg):
@@ -21,6 +22,8 @@ def build_model(cfg):
         model = build_smdnet(cfg)
     elif cfg.MODEL_TYPE == "PSMNetDilation":
         model = build_psmnetdilation(cfg)
+    elif cfg.MODEL_TYPE == "PSMNetKPAC":
+        model = build_psmnetkpac(cfg)
     else:
         raise ValueError(f"Unexpected model type: {cfg.MODEL_TYPE}")
 
