@@ -1,4 +1,3 @@
-from data_rendering.utils.render_utils import TEXTURE_FOLDER, TEXTURE_LIST, TEXTURE_SQ_FOLDER, TEXTURE_SQ_LIST
 import cv2
 import sys
 import os
@@ -7,6 +6,7 @@ REPO_ROOT = os.path.abspath(osp.join(osp.dirname(__file__), ".."))
 sys.path.insert(0, REPO_ROOT)
 from tqdm import tqdm
 from path import Path
+from data_rendering.utils.render_utils import TEXTURE_FOLDER, TEXTURE_LIST, TEXTURE_SQ_FOLDER, TEXTURE_SQ_LIST
 
 resolution = 256
 TEXTURE_SQ_FOLDER = "/media/DATA/LINUX_DATA/activezero2/datasets/mini_imagenet_square/"
