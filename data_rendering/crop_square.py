@@ -9,9 +9,7 @@ from path import Path
 from data_rendering.utils.render_utils import TEXTURE_FOLDER, TEXTURE_LIST, TEXTURE_SQ_FOLDER, TEXTURE_SQ_LIST
 
 resolution = 256
-TEXTURE_SQ_FOLDER = "/media/DATA/LINUX_DATA/activezero2/datasets/mini_imagenet_square/"
 Path(TEXTURE_SQ_FOLDER).makedirs_p()
-TEXTURE_SQ_LIST = "/media/DATA/LINUX_DATA/activezero2/datasets/mini_imagenet_square/list.txt"
 f_list = open(TEXTURE_SQ_LIST, "w")
 
 
