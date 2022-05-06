@@ -30,6 +30,7 @@ class ErrorMetric(object):
             "CFNet",
             "PSMNetRange",
             "PSMNetRange4",
+            "PSMNetDilation",
             "SMDNet",
         ], f"Unknown model type: [{model_type}]"
         self.model_type = model_type
@@ -89,6 +90,9 @@ class ErrorMetric(object):
             prediction = pred_dict["pred3"]
             prediction = prediction.detach().cpu().numpy()[0, 0]
             prediction = cv2.resize(prediction, (960, 544), interpolation=cv2.INTER_LANCZOS4)[2:-2]
+        elif self.model_type == "PSMNetDilation":
+            prediction = pred_dict["pred3"]
+            prediction = prediction.detach().cpu().numpy()[0, 0, 2:-2]
         elif self.model_type == "SMDNet":
             prediction = pred_dict["pred_disp"]
             prediction = prediction.detach().cpu().numpy()[0, 0, 2:-2]
