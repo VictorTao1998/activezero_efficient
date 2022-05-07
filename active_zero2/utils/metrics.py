@@ -236,7 +236,7 @@ class ErrorMetric(object):
 
             # prob cost volume
             if self.model_type in ["PSMNetRange", "PSMNetDilation", "PSMNetKPAC", "PSMNetGrad"]:
-                cost_volume = pred_dict["prob_cost3"][0].detach().cpu().numpy()
+                cost_volume = pred_dict["prob_volume"][0].detach().cpu().numpy()
                 save_prob_volume(cost_volume, os.path.join(save_folder, "prob_volume.pcd"))
 
         self.epe.append(epe)

@@ -100,7 +100,10 @@ if __name__ == "__main__":
         checkpointer.load(None, resume=True)
 
     if args.save_file:
-        model_path = checkpointer.get_checkpoint_file()
+        if cfg.TEST.WEIGHT:
+            model_path = weight_path
+        else:
+            model_path = checkpointer.get_checkpoint_file()
         if model_path:
             model_name = model_path.split("/")[-1].split(".")[0]
             file_dir = osp.join(output_dir, model_name)
