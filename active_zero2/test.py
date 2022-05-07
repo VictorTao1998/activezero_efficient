@@ -225,7 +225,10 @@ if __name__ == "__main__":
                 # Forward
                 pred_dict = model(data_batch)
                 metric.compute(
-                    data_batch, pred_dict, save_folder=output_dir / data_dir if args.save_file else "", real_data=True
+                    data_batch,
+                    pred_dict,
+                    save_folder=osp.join(file_dir, data_dir) if args.save_file else "",
+                    real_data=True,
                 )
 
                 batch_time = time.time() - tic
