@@ -32,6 +32,7 @@ class ErrorMetric(object):
             "PSMNetRange4",
             "PSMNetDilation",
             "PSMNetKPAC",
+            "PSMNetGrad",
             "SMDNet",
         ], f"Unknown model type: [{model_type}]"
         self.model_type = model_type
@@ -95,6 +96,9 @@ class ErrorMetric(object):
             prediction = pred_dict["pred3"]
             prediction = prediction.detach().cpu().numpy()[0, 0, 2:-2]
         elif self.model_type == "PSMNetKPAC":
+            prediction = pred_dict["pred3"]
+            prediction = prediction.detach().cpu().numpy()[0, 0, 2:-2]
+        elif self.model_type == "PSMNetGrad":
             prediction = pred_dict["pred3"]
             prediction = prediction.detach().cpu().numpy()[0, 0, 2:-2]
         elif self.model_type == "SMDNet":
