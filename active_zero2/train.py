@@ -336,17 +336,20 @@ if __name__ == "__main__":
                     patch_size=cfg.LOSS.SIM_REPROJ.PATCH_SIZE,
                     only_last_pred=cfg.LOSS.SIM_REPROJ.ONLY_LAST_PRED,
                 )
-                loss += cfg.LOSS.SIM_REPROJ.WEIGHT * sim_reproj
+                sim_reproj *= cfg.LOSS.SIM_REPROJ.WEIGHT
+                loss += sim_reproj
                 loss_dict["loss_sim_reproj"] = sim_reproj
             if cfg.LOSS.SIM_DISP.WEIGHT > 0:
                 sim_disp = model.compute_disp_loss(data_batch, pred_dict)
-                loss += cfg.LOSS.SIM_DISP.WEIGHT * sim_disp
+                sim_disp *= cfg.LOSS.SIM_DISP.WEIGHT
+                loss += sim_disp
                 loss_dict["loss_sim_disp"] = sim_disp
 
             if cfg.MODEL_TYPE == "PSMNetGrad":
                 if cfg.PSMNetGrad.LOSS_WEIGHT > 0:
                     grad_loss = model.compute_grad_loss(data_batch, pred_dict)
-                    loss += cfg.PSMNetGrad.LOSS_WEIGHT * grad_loss
+                    grad_loss *= cfg.PSMNetGrad.LOSS_WEIGHT
+                    loss += grad_loss
                     loss_dict["loss_sim_grad"] = grad_loss
 
             loss_dict["loss_sim_total"] = loss
@@ -372,17 +375,20 @@ if __name__ == "__main__":
                     patch_size=cfg.LOSS.REAL_REPROJ.PATCH_SIZE,
                     only_last_pred=cfg.LOSS.REAL_REPROJ.ONLY_LAST_PRED,
                 )
-                loss += cfg.LOSS.REAL_REPROJ.WEIGHT * real_reproj
+                real_reproj *= cfg.LOSS.REAL_REPROJ.WEIGHT
+                loss += real_reproj
                 loss_dict["loss_real_reproj"] = real_reproj
             if cfg.LOSS.REAL_DISP.WEIGHT > 0:
                 real_disp = model.compute_disp_loss(data_batch, pred_dict)
-                loss += cfg.LOSS.REAL_DISP.WEIGHT * real_disp
+                real_disp *= cfg.LOSS.REAL_DISP.WEIGHT
+                loss += real_disp
                 loss_dict["loss_real_disp"] = real_disp
 
             if cfg.MODEL_TYPE == "PSMNetGrad":
                 if cfg.PSMNetGrad.LOSS_WEIGHT > 0:
                     grad_loss = model.compute_grad_loss(data_batch, pred_dict)
-                    loss += cfg.PSMNetGrad.LOSS_WEIGHT * grad_loss
+                    grad_loss *= cfg.PSMNetGrad.LOSS_WEIGHT
+                    loss += grad_loss
                     loss_dict["loss_real_grad"] = grad_loss
 
             loss_dict["loss_real_total"] = loss
@@ -459,12 +465,21 @@ if __name__ == "__main__":
                                 patch_size=cfg.LOSS.SIM_REPROJ.PATCH_SIZE,
                                 only_last_pred=cfg.LOSS.SIM_REPROJ.ONLY_LAST_PRED,
                             )
-                            loss += cfg.LOSS.SIM_REPROJ.WEIGHT * sim_reproj
+                            sim_reproj *= cfg.LOSS.SIM_REPROJ.WEIGHT
+                            loss += sim_reproj
                             loss_dict["loss_sim_reproj"] = sim_reproj
                         if cfg.LOSS.SIM_DISP.WEIGHT > 0:
                             sim_disp = model.compute_disp_loss(data_batch, pred_dict)
-                            loss += cfg.LOSS.SIM_DISP.WEIGHT * sim_disp
+                            sim_disp *= cfg.LOSS.SIM_DISP.WEIGHT
+                            loss += sim_disp
                             loss_dict["loss_sim_disp"] = sim_disp
+
+                        if cfg.MODEL_TYPE == "PSMNetGrad":
+                            if cfg.PSMNetGrad.LOSS_WEIGHT > 0:
+                                grad_loss = model.compute_grad_loss(data_batch, pred_dict)
+                                grad_loss *= cfg.PSMNetGrad.LOSS_WEIGHT
+                                loss += grad_loss
+                                loss_dict["loss_sim_grad"] = grad_loss
 
                     batch_time = time.time() - tic
                     val_meters.update(time=batch_time, data=data_time)
@@ -511,12 +526,20 @@ if __name__ == "__main__":
                                 patch_size=cfg.LOSS.REAL_REPROJ.PATCH_SIZE,
                                 only_last_pred=cfg.LOSS.REAL_REPROJ.ONLY_LAST_PRED,
                             )
-                            loss += cfg.LOSS.REAL_REPROJ.WEIGHT * real_reproj
+                            real_reproj *= cfg.LOSS.REAL_REPROJ.WEIGHT
+                            loss += real_reproj
                             loss_dict["loss_real_reproj"] = real_reproj
                         if cfg.LOSS.REAL_DISP.WEIGHT > 0:
                             real_disp = model.compute_disp_loss(data_batch, pred_dict)
-                            loss += cfg.LOSS.REAL_DISP.WEIGHT * real_disp
+                            real_disp *= cfg.LOSS.REAL_DISP.WEIGHT
+                            loss += real_disp
                             loss_dict["loss_real_disp"] = real_disp
+                        if cfg.MODEL_TYPE == "PSMNetGrad":
+                            if cfg.PSMNetGrad.LOSS_WEIGHT > 0:
+                                grad_loss = model.compute_grad_loss(data_batch, pred_dict)
+                                grad_loss *= cfg.PSMNetGrad.LOSS_WEIGHT
+                                loss += grad_loss
+                                loss_dict["loss_real_grad"] = grad_loss
 
                     batch_time = time.time() - tic
                     val_meters.update(time=batch_time, data=data_time)
