@@ -26,6 +26,7 @@ class ErrorMetric(object):
         is_depth: bool = False,
     ):
         assert model_type in [
+            "RealSense",
             "PSMNet",
             "CFNet",
             "PSMNetRange",
@@ -51,6 +52,10 @@ class ErrorMetric(object):
             self.real_robot_masks[mask_file.name[:-4]] = mask
 
         self.cmap = plt.get_cmap("jet")
+
+        # cutoff threshold
+        self.disp_diff_threshold = 8
+        self.depth_diff_threshold = 32e-3
 
     def reset(self):
         self.epe = []
@@ -104,6 +109,8 @@ class ErrorMetric(object):
         elif self.model_type == "SMDNet":
             prediction = pred_dict["pred_disp"]
             prediction = prediction.detach().cpu().numpy()[0, 0, 2:-2]
+        elif self.model_type == "RealSense":
+            prediction = pred_dict["depth"]
 
         disp_gt = data_batch["img_disp_l"].cpu().numpy()[0, 0, 2:-2]
         depth_gt = data_batch["img_depth_l"].cpu().numpy()[0, 0, 2:-2]
@@ -129,6 +136,8 @@ class ErrorMetric(object):
 
         disp_diff = disp_gt - disp_pred
         depth_diff = depth_gt - depth_pred
+        disp_diff = np.clip(disp_diff, -self.disp_diff_threshold, self.disp_diff_threshold)
+        depth_diff = np.clip(depth_diff, -self.depth_diff_threshold, self.depth_diff_threshold)
 
         epe = np.abs(disp_diff[mask]).mean()
         bad1 = (np.abs(disp_diff[mask]) > 1).sum() / mask.sum()
@@ -171,7 +180,13 @@ class ErrorMetric(object):
 
         if save_folder:
             os.makedirs(save_folder, exist_ok=True)
-            plt.imsave(os.path.join(save_folder, "disp_pred.png"), disp_pred, vmin=0.0, vmax=self.max_disp, cmap="jet")
+            plt.imsave(
+                os.path.join(save_folder, "disp_pred.png"),
+                np.clip(disp_pred, 0, self.max_disp),
+                vmin=0.0,
+                vmax=self.max_disp,
+                cmap="jet",
+            )
             plt.imsave(os.path.join(save_folder, "disp_gt.png"), disp_gt, vmin=0.0, vmax=self.max_disp, cmap="jet")
             plt.imsave(
                 os.path.join(save_folder, "disp_err.png"), disp_diff - 1e5 * (1 - mask), vmin=-8, vmax=8, cmap="jet"
@@ -218,6 +233,11 @@ class ErrorMetric(object):
                     vmax=np.pi,
                     cmap="jet",
                 )
+
+            # prob cost volume
+            if self.model_type in ["PSMNetRange", "PSMNetDilation", "PSMNetKPAC", "PSMNetGrad"]:
+                cost_volume = pred_dict["prob_cost3"][0].detach().cpu().numpy()
+                save_prob_volume(cost_volume, os.path.join(save_folder, "prob_volume.pcd"))
 
         self.epe.append(epe)
         self.bad1.append(bad1)
@@ -319,3 +339,30 @@ def compute_obj_err(disp_gt, depth_gt, disp_pred, focal_length, baseline, label,
         total_obj_depth_4_err,
         total_obj_count,
     )
+
+
+def save_prob_volume(
+    prob_volume,
+    file_path,
+    threshold=0.01,
+):
+    d, h, w = prob_volume.shape
+    custom_cmap = plt.get_cmap("jet")
+    mask = (prob_volume > threshold).reshape(-1)
+
+    color = custom_cmap(prob_volume)[..., :3].reshape(-1, 3)
+
+    coor = np.zeros((d, h, w, 3))
+    for i in range(h):
+        coor[:, i, :, 0] = i
+    for i in range(w):
+        coor[:, :, i, 1] = i
+    for i in range(d):
+        coor[i, :, :, 2] = i
+
+    coor = coor.reshape(-1, 3)
+    pcd = o3d.geometry.PointCloud()
+    pcd.points = o3d.utility.Vector3dVector(coor[mask])
+    pcd.colors = o3d.utility.Vector3dVector(color[mask])
+
+    o3d.io.write_point_cloud(file_path, pcd)
