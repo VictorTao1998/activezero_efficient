@@ -26,6 +26,9 @@ def setup_logger(name, save_dir, rank, filename="log.train.txt", use_std=True):
     if save_dir:
         Path(save_dir).makedirs_p()
         log_file = Path(save_dir) / filename
+        if "log.test" in filename:
+            with open(log_file, "w") as f:
+                f.write("# coding=ASCII\n")
         logger.add(log_file, format=fmt)
 
     # logger to std stream
