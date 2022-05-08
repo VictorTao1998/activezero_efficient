@@ -98,7 +98,7 @@ if __name__ == "__main__":
     # ---------------------------------------------------------------------------- #
     # Build model
     set_random_seed(cfg.RNG_SEED)
-    assert cfg.MODEL_TYPE == "PSMNetADV"
+    assert cfg.MODEL_TYPE in ("PSMNetADV", "PSMNetADV4")
     model = build_model(cfg)
     logger.info(f"Model: \n{model}")
     model = model.cuda()

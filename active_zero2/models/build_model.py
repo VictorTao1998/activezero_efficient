@@ -2,6 +2,7 @@ from active_zero2.models.cfnet.build_model import build_model as build_cfnet
 from active_zero2.models.psmnet.build_model import build_model as build_psmnet
 from active_zero2.models.psmnet_dilation.build_model import build_model as build_psmnetdilation
 from active_zero2.models.psmnet_dilation_adv.build_model import build_model as build_psmnetadv
+from active_zero2.models.psmnet_dilation_adv4.build_model import build_model as build_psmnetadv4
 from active_zero2.models.psmnet_grad.build_model import build_model as build_psmnetgrad
 from active_zero2.models.psmnet_kpac.build_model import build_model as build_psmnetkpac
 from active_zero2.models.psmnet_range.build_model import build_model as build_psmnetrange
@@ -30,6 +31,8 @@ def build_model(cfg):
         model = build_psmnetgrad(cfg)
     elif cfg.MODEL_TYPE == "PSMNetADV":
         model = build_psmnetadv(cfg)
+    elif cfg.MODEL_TYPE == "PSMNetADV4":
+        model = build_psmnetadv4(cfg)
     else:
         raise ValueError(f"Unexpected model type: {cfg.MODEL_TYPE}")
 
