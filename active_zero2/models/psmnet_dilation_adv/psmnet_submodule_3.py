@@ -81,7 +81,8 @@ class DisparityRegression(nn.Module):
         self.disp = torch.linspace(min_disp, max_disp, num_disp).view(1, num_disp, 1, 1).cuda()
 
     def forward(self, x):
-        out = torch.sum(x * self.disp, 1, keepdim=True)
+        disp = self.disp.to(x.device)
+        out = torch.sum(x * disp, 1, keepdim=True)
         return out
 
 
