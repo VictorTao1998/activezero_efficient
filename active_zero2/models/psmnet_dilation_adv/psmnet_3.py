@@ -414,6 +414,8 @@ class PSMNetADV(nn.Module):
         else:
             # generate GT prob volume
             disp_gt = data_batch["img_disp_l"]
+            mask = (disp_gt > self.min_disp) * (disp_gt < self.max_disp)
+            mask = mask.squeeze(1)
             disp_gt_norm = (disp_gt - self.min_disp) / self.T
             disp_gt_norm = disp_gt_norm.squeeze(1)
 
@@ -421,6 +423,10 @@ class PSMNetADV(nn.Module):
             up = low + 1
             low_value = up - disp_gt_norm
             up_value = disp_gt_norm - low
+            low *= mask
+            up *= mask
+            low_value *= mask
+            up_value *= mask
 
             low_volume = F.one_hot(low.long(), num_classes=self.num_disp).permute(0, 3, 1, 2)
             up_volume = F.one_hot(up.long(), num_classes=self.num_disp).permute(0, 3, 1, 2)
