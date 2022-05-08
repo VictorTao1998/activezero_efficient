@@ -324,3 +324,44 @@ _C.TEST.USE_MASK = True
 _C.TEST.MAX_DISP = 192
 _C.TEST.DEPTH_RANGE = (0.2, 1.25)
 _C.TEST.IS_DEPTH = False
+
+# ---------------------------------------------------------------------------- #
+# Adversarial Learning
+# ---------------------------------------------------------------------------- #
+
+PI = 3.1415926
+_C.PSMNetADV = CN()
+_C.PSMNetADV.MIN_DISP = 0
+_C.PSMNetADV.MAX_DISP = 0
+_C.PSMNetADV.NUM_DISP = 0
+_C.PSMNetADV.SET_ZERO = False
+_C.PSMNetADV.DILATION = 3
+_C.PSMNetADV.D_CHANNELS = 16
+_C.PSMNetADV.DISP_ENCODING = (PI / 32, PI / 8, PI / 2)
+_C.PSMNetADV.WGANGP_NORM = 1
+_C.PSMNetADV.WGANGP_LAMBDA = 10
+
+_C.G_OPTIMIZER = CN()
+_C.G_OPTIMIZER.TYPE = ""
+
+# Basic parameters of the optimizer
+# Note that the learning rate should be changed according to batch size
+_C.G_OPTIMIZER.LR = 1e-3
+_C.G_OPTIMIZER.WEIGHT_DECAY = 0.0
+
+_C.G_OPTIMIZER.Adam = CN()
+_C.G_OPTIMIZER.Adam.betas = (0.5, 0.9)
+
+_C.D_OPTIMIZER = CN()
+_C.D_OPTIMIZER.TYPE = ""
+
+# Basic parameters of the optimizer
+# Note that the learning rate should be changed according to batch size
+_C.D_OPTIMIZER.LR = 1e-3
+
+_C.D_OPTIMIZER.Adam = CN()
+_C.D_OPTIMIZER.Adam.betas = (0.5, 0.9)
+
+# use the adversarial loss after ADV_ITER
+_C.ADV_ITER = 0
+_C.LOSS.ADV = 1
