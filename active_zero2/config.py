@@ -364,4 +364,4 @@ _C.D_OPTIMIZER.Adam.betas = (0.5, 0.9)
 
 # use the adversarial loss after ADV_ITER
 _C.ADV_ITER = 0
-_C.LOSS.ADV = 1
+_C.LOSS.ADV = 1.0
