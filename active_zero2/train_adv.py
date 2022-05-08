@@ -56,6 +56,7 @@ if __name__ == "__main__":
     # Setup the experiment
     # ---------------------------------------------------------------------------- #
     args = parse_args()
+    local_rank = 0
 
     # Load the configuration
     cfg.merge_from_file(args.config_file)
@@ -87,7 +88,7 @@ if __name__ == "__main__":
     logger.info("Collecting env info (might take some time)\n" + collect_env_info())
     logger.info(f"Loaded config file: '{args.config_file}'")
     logger.info(f"Running with configs:\n{cfg}")
-    logger.info(f"Running with {num_gpus} GPUs")
+    logger.info(f"Running with {torch.cuda.device_count()} GPUs")
 
     # Build tensorboard logger
     summary_writer = SummaryWriter(f"{output_dir}/{run_name}")
