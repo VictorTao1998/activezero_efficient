@@ -108,6 +108,9 @@ if __name__ == "__main__":
             fixed_angle=True,
             primitives=False,
             primitives_v2=False,
+            rand_lighting=False,
+            rand_table=False,
+            rand_env=False
         )
 
     renderer = None
