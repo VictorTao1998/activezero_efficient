@@ -34,6 +34,8 @@ class ErrorMetric(object):
             "PSMNetDilation",
             "PSMNetKPAC",
             "PSMNetGrad",
+            "PSMNetADV",
+            "PSMNetADV4",
             "SMDNet",
         ], f"Unknown model type: [{model_type}]"
         self.model_type = model_type
@@ -84,28 +86,24 @@ class ErrorMetric(object):
         if "-300" in data_batch["dir"] and real_data:
             assert self.use_mask, "Use_mask should be True when evaluating real data"
 
-        if self.model_type == "PSMNet":
+        if self.model_type in (
+            "PSMNet",
+            "PSMNetRange",
+            "PSMNetDilation",
+            "PSMNetKPAC",
+            "PSMNetGrad",
+            "PSMNetADV",
+            "PSMNetADV4",
+        ):
             prediction = pred_dict["pred3"]
             prediction = prediction.detach().cpu().numpy()[0, 0, 2:-2]
         elif self.model_type == "CFNet":
             prediction = pred_dict["disp_preds"][-1]
             prediction = prediction.detach().cpu().numpy()[0, 0, 2:-2]
-        elif self.model_type == "PSMNetRange":
-            prediction = pred_dict["pred3"]
-            prediction = prediction.detach().cpu().numpy()[0, 0, 2:-2]
         elif self.model_type == "PSMNetRange4":
             prediction = pred_dict["pred3"]
             prediction = prediction.detach().cpu().numpy()[0, 0]
             prediction = cv2.resize(prediction, (960, 544), interpolation=cv2.INTER_LANCZOS4)[2:-2]
-        elif self.model_type == "PSMNetDilation":
-            prediction = pred_dict["pred3"]
-            prediction = prediction.detach().cpu().numpy()[0, 0, 2:-2]
-        elif self.model_type == "PSMNetKPAC":
-            prediction = pred_dict["pred3"]
-            prediction = prediction.detach().cpu().numpy()[0, 0, 2:-2]
-        elif self.model_type == "PSMNetGrad":
-            prediction = pred_dict["pred3"]
-            prediction = prediction.detach().cpu().numpy()[0, 0, 2:-2]
         elif self.model_type == "SMDNet":
             prediction = pred_dict["pred_disp"]
             prediction = prediction.detach().cpu().numpy()[0, 0, 2:-2]
