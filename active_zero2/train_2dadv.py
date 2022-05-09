@@ -265,7 +265,7 @@ if __name__ == "__main__":
             k: v.cuda(non_blocking=True) for k, v in real_data_batch.items() if isinstance(v, torch.Tensor)
         }
         if cfg.PSMNetGrad2DADV.USE_SIM_PRED:
-            real_data_batch["real_disp"] = sim_D_dict["pred3"]
+            real_data_batch["real_disp"] = sim_pred_dict["pred3"]
         else:
             real_data_batch["real_disp"] = sim_data_batch["img_disp_l"]
         real_pred_dict = model_parallel(real_data_batch)
