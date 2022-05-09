@@ -13,6 +13,7 @@ from path import Path
 from tabulate import tabulate
 
 from active_zero2.utils.geometry import cal_normal_map, depth2pts_np
+from active_zero2.models.build_model import MODEL_LIST
 
 
 class ErrorMetric(object):
@@ -25,19 +26,7 @@ class ErrorMetric(object):
         num_classes: int = 17,
         is_depth: bool = False,
     ):
-        assert model_type in [
-            "RealSense",
-            "PSMNet",
-            "CFNet",
-            "PSMNetRange",
-            "PSMNetRange4",
-            "PSMNetDilation",
-            "PSMNetKPAC",
-            "PSMNetGrad",
-            "PSMNetADV",
-            "PSMNetADV4",
-            "SMDNet",
-        ], f"Unknown model type: [{model_type}]"
+        assert model_type in ("RealSense",) + MODEL_LIST, f"Unknown model type: [{model_type}]"
         self.model_type = model_type
         self.use_mask = use_mask
         self.max_disp = max_disp
@@ -94,6 +83,7 @@ class ErrorMetric(object):
             "PSMNetGrad",
             "PSMNetADV",
             "PSMNetADV4",
+            "PSMNetGrad2DADV",
         ):
             prediction = pred_dict["pred3"]
             prediction = prediction.detach().cpu().numpy()[0, 0, 2:-2]

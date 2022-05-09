@@ -192,7 +192,7 @@ _C.PSMNetGrad.MAX_DISP = 0
 _C.PSMNetGrad.NUM_DISP = 0
 _C.PSMNetGrad.SET_ZERO = False
 _C.PSMNetGrad.DILATION = 3
-_C.PSMNetGrad.LOSS_WEIGHT = 0.0
+# _C.PSMNetGrad.LOSS_WEIGHT = 0.0
 _C.PSMNetGrad.EPSILON = 1.0
 
 _C.SMDNet = CN()
@@ -352,6 +352,18 @@ _C.PSMNetADV4.DISP_ENCODING = (PI / 32, PI / 8, PI / 2)
 _C.PSMNetADV4.WGANGP_NORM = 1.0
 _C.PSMNetADV4.WGANGP_LAMBDA = 10.0
 
+_C.PSMNetGrad2DADV = CN()
+_C.PSMNetGrad2DADV.MIN_DISP = 0
+_C.PSMNetGrad2DADV.MAX_DISP = 0
+_C.PSMNetGrad2DADV.NUM_DISP = 0
+_C.PSMNetGrad2DADV.SET_ZERO = False
+_C.PSMNetGrad2DADV.DILATION = 3
+_C.PSMNetGrad2DADV.EPSILON = 1.0
+_C.PSMNetGrad2DADV.D_CHANNELS = 16
+_C.PSMNetGrad2DADV.WGANGP_NORM = 1.0
+_C.PSMNetGrad2DADV.WGANGP_LAMBDA = 10.0
+_C.PSMNetGrad2DADV.USE_SIM_PRED = False  # ADV between sim disp pred and real disp pred or gt disp and real disp pred
+
 _C.G_OPTIMIZER = CN()
 _C.G_OPTIMIZER.TYPE = ""
 
@@ -376,3 +388,6 @@ _C.D_OPTIMIZER.Adam.betas = (0.5, 0.9)
 # use the adversarial loss after ADV_ITER
 _C.ADV_ITER = 0
 _C.LOSS.ADV = 1.0
+
+_C.LOSS.SIM_GRAD = 0.01
+_C.LOSS.REAL_GRAD = 0.03
