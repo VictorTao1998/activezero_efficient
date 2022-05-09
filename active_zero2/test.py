@@ -181,7 +181,7 @@ if __name__ == "__main__":
                 metric.compute(
                     data_batch,
                     pred_dict,
-                    save_folder=osp.join(file_dir, data_dir) if args.save_file else "",
+                    save_folder=osp.join(file_dir, data_dir+"_sim") if args.save_file else "",
                     real_data=False,
                 )
 
@@ -230,7 +230,7 @@ if __name__ == "__main__":
                 metric.compute(
                     data_batch,
                     pred_dict,
-                    save_folder=osp.join(file_dir, data_dir) if args.save_file else "",
+                    save_folder=osp.join(file_dir, data_dir+"_real") if args.save_file else "",
                     real_data=True,
                 )
 
