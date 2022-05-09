@@ -269,6 +269,7 @@ def render_scene(
                 renderer=renderer,
                 pose=sapien.Pose.from_transformation_matrix(world_js[obj_name]),
                 is_kinematic=True,
+                material_name="kuafu_material_new2",
             )
 
     for view_id in range(num_views):
