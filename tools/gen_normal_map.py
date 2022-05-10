@@ -40,7 +40,9 @@ def sub_main(prefix_list):
     start = time.time()
     for idx in range(n):
         p = prefix_list[idx]
-        print(p)
+        if os.path.exists(os.path.join(args.data_folder, p, "normalL.png")):
+            logger.info(f"Skip {p}")
+            continue
         depth = cv2.imread(os.path.join(args.data_folder, p, "depthL.png"), cv2.IMREAD_UNCHANGED)
         depth = (depth.astype(float)) / 1000
         meta = load_pickle(os.path.join(args.data_folder, p, "meta.pkl"))
@@ -50,7 +52,7 @@ def sub_main(prefix_list):
         cv2.imwrite(os.path.join(args.data_folder, p, "normalL_colored.png"), normal_map_colored)
         normal_map = ((normal_map + 1) * 1000).astype(np.uint16)
         cv2.imwrite(os.path.join(args.data_folder, p, "normalL.png"), normal_map)
-        print(f"Generating {p} normal map {idx}/{n} time: {time.time() - start:.2f}s")
+        logger.info(f"Generating {p} normal map {idx}/{n} time: {time.time() - start:.2f}s")
 
 
 def main():
