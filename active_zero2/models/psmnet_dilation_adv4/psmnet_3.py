@@ -113,6 +113,29 @@ class Discriminator(nn.Module):
         return y.view(-1, 1).squeeze(1)
 
 
+class Discriminator3(nn.Module):
+    def __init__(self, in_channels, base_channels, bias=False):
+        super(Discriminator3, self).__init__()
+        self.net = nn.Sequential(
+            nn.Conv3d(in_channels, base_channels, 4, stride=2, padding=0, bias=bias),
+            nn.InstanceNorm3d(base_channels),
+            nn.LeakyReLU(0.2, True),
+            nn.Conv3d(base_channels, base_channels * 2, 4, stride=2, padding=0, bias=bias),
+            nn.InstanceNorm3d(base_channels * 2),
+            nn.LeakyReLU(0.2, True),
+            nn.Conv3d(base_channels * 2, 1, 4, stride=1, padding=0, bias=bias),
+        )
+
+    def forward(self, x):
+        """
+
+        :param x: prob cost volume (w/ disp encoding), [B, C, D, H, W]
+        :return:
+        """
+        y = self.net(x)
+        return y.view(-1, 1).squeeze(1)
+
+
 class PSMNetDilation(nn.Module):
     def __init__(self, min_disp: float, max_disp: float, num_disp: int, set_zero: bool, dilation: int):
         super(PSMNetDilation, self).__init__()
@@ -329,7 +352,7 @@ class PSMNetADV4(nn.Module):
             self.disp_encoded = None
             in_channels = 1
 
-        self.D = Discriminator(in_channels, d_channels, bias=False)
+        self.D = Discriminator3(in_channels, d_channels, bias=False)
         self.wgangp_norm = wgangp_norm
         self.wgangp_lambda = wgangp_lambda
 
