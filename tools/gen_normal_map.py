@@ -58,8 +58,8 @@ def main():
     assert num % args.total == 0, f"total num: {num}, job: {args.total}"
     l = num // args.total
 
-    prefix_list = prefix[(args.sub) - 1 * l : args.sub * l]
-    print(f"total: {args.total}, sub: {args.sub}, {prefix_list[0]} ~ {prefix_list[-1]}")
+    prefix_list = prefix[(args.sub - 1) * l : args.sub * l]
+    print(f"total: {args.total}, sub: {args.sub}, len:{l} {prefix_list[0]} ~ {prefix_list[-1]}")
     sub_main(prefix_list)
 
 
