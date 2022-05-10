@@ -38,6 +38,7 @@ def sub_main(prefix_list):
     start = time.time()
     for idx in range(n):
         p = prefix_list[idx]
+        print(p)
         depth = cv2.imread(os.path.join(args.data_folder, p, "depthL.png"), cv2.IMREAD_UNCHANGED)
         depth = (depth.astype(float)) / 1000
         meta = load_pickle(os.path.join(args.data_folder, p, "meta.pkl"))
@@ -55,7 +56,7 @@ def main():
     with open(args.split_file, "r") as f:
         prefix = [line.strip() for line in f]
     num = len(prefix)
-    assert num % args.mp == 0
+    assert num % args.mp == 0, f"total num: {num}"
     l = num // args.mp
 
     p_list = []
