@@ -2,7 +2,6 @@ import argparse
 import os
 import os.path as osp
 import sys
-import multiprocessing
 
 _ROOT_DIR = os.path.abspath(osp.join(osp.dirname(__file__), ".."))
 sys.path.insert(0, _ROOT_DIR)
@@ -29,7 +28,8 @@ parser.add_argument(
     type=str,
     required=True,
 )
-parser.add_argument("--mp", type=int, default=1, help="multi-process")
+parser.add_argument("--sub", type=int, required=True)
+parser.add_argument("--total", type=int, required=True)
 args = parser.parse_args()
 
 
@@ -52,21 +52,15 @@ def sub_main(prefix_list):
 
 
 def main():
-    print("Multi-processing: ", args.mp)
     with open(args.split_file, "r") as f:
         prefix = [line.strip() for line in f]
     num = len(prefix)
-    assert num % args.mp == 0, f"total num: {num}"
-    l = num // args.mp
+    assert num % args.total == 0, f"total num: {num}, job: {args.total}"
+    l = num // args.total
 
-    p_list = []
-    for i in range(args.mp):
-        p = multiprocessing.Process(target=sub_main, args=(prefix[i * l : (i + 1) * l],))
-        p.start()
-        p_list.append(p)
-
-    for p in p_list:
-        p.join()
+    prefix_list = prefix[(args.sub) - 1 * l : args.sub * l]
+    print(f"total: {args.total}, sub: {args.sub}, {prefix_list[0]} ~ {prefix_list[-1]}")
+    sub_main(prefix_list)
 
 
 if __name__ == "__main__":
