@@ -10,9 +10,11 @@ import time
 
 import cv2
 import numpy as np
+from loguru import logger
 
 from active_zero2.utils.geometry import cal_normal_map
 from active_zero2.utils.io import load_pickle
+from path import Path
 
 parser = argparse.ArgumentParser(description="Extract temporal IR pattern from temporal real images")
 parser.add_argument(
@@ -52,6 +54,26 @@ def sub_main(prefix_list):
 
 
 def main():
+    target_root = args.data_folder[: -len(args.data_folder.split("/")[-1])]
+    timestamp = time.strftime("%y-%m-%d_%H-%M-%S")
+    name = "normal_" + target_root.split("/")[-1]
+    filename = f"log.normal.sub{args.sub:02d}.tot{args.total}.{timestamp}.txt"
+    # set up logger
+    logger.remove()
+    fmt = (
+        f"<green>{{time:YYYY-MM-DD HH:mm:ss.SSS}}</green> | "
+        f"<cyan>{name}</cyan> | "
+        f"<lvl>{{level}}</lvl> | "
+        f"<lvl>{{message}}</lvl>"
+    )
+
+    # logger to file
+    log_file = Path(target_root) / filename
+    logger.add(log_file, format=fmt)
+
+    # logger to std stream
+    logger.add(sys.stdout, format=fmt)
+    logger.info(f"Args: {args}")
     with open(args.split_file, "r") as f:
         prefix = [line.strip() for line in f]
     num = len(prefix)
