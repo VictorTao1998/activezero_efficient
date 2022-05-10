@@ -2,6 +2,7 @@ import argparse
 import os
 import os.path as osp
 import sys
+import multiprocessing
 
 _ROOT_DIR = os.path.abspath(osp.join(osp.dirname(__file__), ".."))
 sys.path.insert(0, _ROOT_DIR)
