@@ -230,7 +230,6 @@ class ErrorMetric(object):
                 "PSMNetGrad",
                 "PSMNetADV",
                 "PSMNetADV4",
-                "PSMNetGrad2DADV",
             ]:
                 cost_volume = pred_dict["prob_volume"][0].detach().cpu().numpy()
                 save_prob_volume(cost_volume, os.path.join(save_folder, "prob_volume.pcd"))
