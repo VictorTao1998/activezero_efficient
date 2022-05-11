@@ -313,6 +313,7 @@ class PSMNetADV4(nn.Module):
         disp_encoding: Tuple[float],
         wgangp_norm: float,
         wgangp_lambda: float,
+        d_type: str,
     ):
         """
 
@@ -356,7 +357,11 @@ class PSMNetADV4(nn.Module):
             self.disp_encoded = None
             in_channels = 1
 
-        self.D = Discriminator3(in_channels, d_channels, bias=False)
+        assert d_type in ("D", "D3")
+        if d_type == "D":
+            self.D = Discriminator(in_channels, d_channels, bias=False)
+        elif d_type == "D3":
+            self.D = Discriminator3(in_channels, d_channels, bias=False)
         self.wgangp_norm = wgangp_norm
         self.wgangp_lambda = wgangp_lambda
 

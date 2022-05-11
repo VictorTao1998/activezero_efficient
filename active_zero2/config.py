@@ -368,6 +368,7 @@ _C.PSMNetADV4.DISP_ENCODING = (PI / 32, PI / 8, PI / 2)
 _C.PSMNetADV4.WGANGP_NORM = 1.0
 _C.PSMNetADV4.WGANGP_LAMBDA = 10.0
 _C.PSMNetADV4.USE_SIM_PRED = False  # ADV between sim disp pred and real disp pred or gt disp and real disp pred
+_C.PSMNetADV4.D_TYPE = "D3"
 
 _C.PSMNetGrad2DADV = CN()
 _C.PSMNetGrad2DADV.MIN_DISP = 0
