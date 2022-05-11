@@ -262,8 +262,8 @@ class MessyTableDataset(Dataset):
             data_dict["img_pattern_r"] = torch.from_numpy(img_pattern_r).float().unsqueeze(0)
 
         if self.left_off_name and self.right_off_name:
-            data_dict["img_off_l"] = crop(img_off_l)
-            data_dict["img_off_r"] = crop(img_off_r)
+            data_dict["img_off_l"] = self.data_aug(img_off_l).float()
+            data_dict["img_off_r"] = self.data_aug(img_off_r).float()
 
         if self.normal_name:
             data_dict["img_normal_l"] = torch.from_numpy(img_normal_l).float().permute(2, 0, 1)
