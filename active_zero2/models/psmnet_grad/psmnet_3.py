@@ -171,7 +171,6 @@ class PSMNetGrad(nn.Module):
 
         disp_list = self.disp_list.to(refimg_feature.device)
         disp_list_4 = self.disp_list_4.to(refimg_feature.device)
-
         # Cost Volume
         [bs, feature_size, H, W] = refimg_feature.size()
         # Original coordinates of pixels
@@ -196,9 +195,7 @@ class PSMNetGrad(nn.Module):
             # set invalid area to zero
             valid_mask = (x_base > disp_grid).permute(0, 3, 1, 2).unsqueeze(1)
             ref_cost_volume = ref_cost_volume * valid_mask
-
         cost = torch.cat((ref_cost_volume, target_cost_volume), dim=1)
-
         cost0 = self.dres0(cost)
         cost0 = self.dres1(cost0) + cost0
 
