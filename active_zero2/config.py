@@ -218,12 +218,6 @@ _C.SMDNet.MAX_DISP = 192
 _C.SMDNet.NO_SINE = False
 _C.SMDNet.NO_RESIDUAL = False
 
-_C.PSMNetDilation = CN()
-_C.PSMNetDilation.MIN_DISP = 0
-_C.PSMNetDilation.MAX_DISP = 0
-_C.PSMNetDilation.NUM_DISP = 0
-_C.PSMNetDilation.SET_ZERO = False
-_C.PSMNetDilation.DILATION = 3
 
 # ---------------------------------------------------------------------------- #
 # Losses
