@@ -234,6 +234,14 @@ class ErrorMetric(object):
                 cost_volume = pred_dict["prob_volume"][0].detach().cpu().numpy()
                 save_prob_volume(cost_volume, os.path.join(save_folder, "prob_volume.pcd"))
 
+            # 2D Discriminator
+            if "d_gt" in pred_dict and "d_pred" in pred_dict:
+                d_gt = pred_dict["d_gt"][0, 0].detach().cpu().numpy()
+                d_pred = pred_dict["d_pred"][0, 0].detach().cpu().numpy()
+
+                plt.imsave(os.path.join(save_folder, "d_gt.png"), d_gt, vmin=-0.02, vmax=0.02, cmap="jet")
+                plt.imsave(os.path.join(save_folder, "d_pred.png"), d_pred, vmin=-0.02, vmax=0.02, cmap="jet")
+
         self.epe.append(epe)
         self.bad1.append(bad1)
         self.bad2.append(bad2)

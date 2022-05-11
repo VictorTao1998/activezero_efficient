@@ -178,6 +178,8 @@ if __name__ == "__main__":
                 data_batch["dir"] = data_dir
                 # Forward
                 pred_dict = model(data_batch)
+                if cfg.MODEL_TYPE == "PSMNetGrad2DADV":
+                    model.test_D(data_batch, pred_dict)
                 metric.compute(
                     data_batch,
                     pred_dict,
@@ -227,6 +229,8 @@ if __name__ == "__main__":
                 data_batch["dir"] = data_dir
                 # Forward
                 pred_dict = model(data_batch)
+                if cfg.MODEL_TYPE == "PSMNetGrad2DADV":
+                    model.test_D(data_batch, pred_dict)
                 metric.compute(
                     data_batch,
                     pred_dict,

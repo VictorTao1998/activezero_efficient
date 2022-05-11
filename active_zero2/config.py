@@ -380,6 +380,7 @@ _C.PSMNetGrad2DADV.D_CHANNELS = 16
 _C.PSMNetGrad2DADV.WGANGP_NORM = 1.0
 _C.PSMNetGrad2DADV.WGANGP_LAMBDA = 10.0
 _C.PSMNetGrad2DADV.USE_SIM_PRED = False  # ADV between sim disp pred and real disp pred or gt disp and real disp pred
+_C.PSMNetGrad2DADV.SUB_AVG_SIZE = 0
 
 _C.G_OPTIMIZER = CN()
 _C.G_OPTIMIZER.TYPE = ""

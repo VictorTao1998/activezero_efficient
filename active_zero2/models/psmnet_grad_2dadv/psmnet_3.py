@@ -245,8 +245,9 @@ class PSMNetDilation(nn.Module):
 
 
 class Discriminator2D(nn.Module):
-    def __init__(self, base_channels, bias=False):
+    def __init__(self, base_channels: int, sub_avg_size: int, bias=False):
         super(Discriminator2D, self).__init__()
+        self.sub_avg_size = sub_avg_size
         self.net = nn.Sequential(
             nn.Conv2d(1, base_channels, 3, padding=1, dilation=1, bias=bias),
             nn.LeakyReLU(0.2, True),
@@ -258,8 +259,12 @@ class Discriminator2D(nn.Module):
         )
 
     def forward(self, x):
+        if self.sub_avg_size > 0:
+            x_avg = F.avg_pool2d(x, self.sub_avg_size)
+            x_avg = F.interpolate(x_avg, size=x.size()[2:], mode="nearest")
+            x = x - x_avg
         y = self.net(x)
-        return y.view(-1)
+        return y
 
 
 class PSMNetGrad2DADV(nn.Module):
@@ -274,6 +279,7 @@ class PSMNetGrad2DADV(nn.Module):
         d_channels: int,
         wgangp_norm: float,
         wgangp_lambda: float,
+        sub_avg_size: int,
     ):
         """
         :param min_disp:
@@ -285,7 +291,7 @@ class PSMNetGrad2DADV(nn.Module):
         :param d_channels: Discriminator base channels
         :param wgangp_norm: WGANGP gradient penalty norm
         :param wgangp_lambda: WGANGP gradient penalty coefficient
-        :param use_sim_pred:
+        :param sub_avg_size: subtract the local average in discriminator
         """
         super(PSMNetGrad2DADV, self).__init__()
         self.min_disp = min_disp
@@ -302,7 +308,7 @@ class PSMNetGrad2DADV(nn.Module):
         self.psmnet = PSMNetDilation(min_disp, max_disp, num_disp, set_zero, dilation)
 
         self.disp_grad = DispGrad()
-        self.D = Discriminator2D(base_channels=d_channels, bias=False)
+        self.D = Discriminator2D(base_channels=d_channels, sub_avg_size=sub_avg_size, bias=False)
         self.wgangp_norm = wgangp_norm
         self.wgangp_lambda = wgangp_lambda
 
@@ -421,6 +427,15 @@ class PSMNetGrad2DADV(nn.Module):
         disp_pred = pred_dict["pred3"]
         disp_pred = torch.clip((disp_pred - self.min_disp) / (self.max_disp - self.min_disp), 0, 1)
         return self.D(disp_pred).mean()
+
+    def test_D(self, data_batch, pred_dict):
+        disp_gt = data_batch["img_disp_l"]
+        disp_gt = torch.clip((disp_gt - self.min_disp) / (self.max_disp - self.min_disp), 0, 1)
+        pred_dict["d_gt"] = self.D(disp_gt)
+
+        disp_pred = pred_dict["pred3"]
+        disp_pred = torch.clip((disp_pred - self.min_disp) / (self.max_disp - self.min_disp), 0, 1)
+        pred_dict["d_pred"] = self.D(disp_pred)
 
 
 if __name__ == "__main__":
