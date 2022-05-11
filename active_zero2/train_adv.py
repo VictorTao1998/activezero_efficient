@@ -265,12 +265,12 @@ if __name__ == "__main__":
         }
         if "img_disp_l" not in real_data_batch:
             if cfg.MODEL_TYPE == "PSMNetADV":
-                if cfg.PSMNetADV.USE_SIME_PRED:
+                if cfg.PSMNetADV.USE_SIM_PRED:
                     real_data_batch["gt_prob_volume"] = sim_D_dict["pred_prob_volume"]
                 else:
                     real_data_batch["gt_prob_volume"] = sim_D_dict["gt_prob_volume"]
             if cfg.MODEL_TYPE == "PSMNetADV4":
-                if cfg.PSMNetADV4.USE_SIME_PRED:
+                if cfg.PSMNetADV4.USE_SIM_PRED:
                     real_data_batch["gt_prob_volume"] = sim_D_dict["pred_prob_volume"]
                 else:
                     real_data_batch["gt_prob_volume"] = sim_D_dict["gt_prob_volume"]
