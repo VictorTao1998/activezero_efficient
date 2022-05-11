@@ -13,5 +13,6 @@ def build_model(cfg):
         disp_encoding=cfg.PSMNetADV4.DISP_ENCODING,
         wgangp_norm=cfg.PSMNetADV4.WGANGP_NORM,
         wgangp_lambda=cfg.PSMNetADV4.WGANGP_LAMBDA,
+        d_type=cfg.PSMNetADV4.D_TYPE,
     )
     return model
