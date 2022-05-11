@@ -202,8 +202,6 @@ class PSMNetDilation(nn.Module):
             elif isinstance(m, nn.Linear):
                 m.bias.data.zero_()
 
-        self.disp_grad = DispGrad()
-
     def forward(self, data_batch):
         img_L, img_R = data_batch["img_l"], data_batch["img_r"]
         refimg_feature = self.feature_extraction(img_L)  # [bs, 32, H/4, W/4]
@@ -361,6 +359,8 @@ class PSMNetADV4(nn.Module):
         self.D = Discriminator3(in_channels, d_channels, bias=False)
         self.wgangp_norm = wgangp_norm
         self.wgangp_lambda = wgangp_lambda
+
+        self.disp_grad = DispGrad()
 
     def forward(self, data_batch):
         pred_dict = self.psmnet(data_batch)
