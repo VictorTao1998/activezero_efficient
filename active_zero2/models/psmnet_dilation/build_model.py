@@ -8,5 +8,6 @@ def build_model(cfg):
         num_disp=cfg.PSMNetDilation.NUM_DISP,
         set_zero=cfg.PSMNetDilation.SET_ZERO,
         dilation=cfg.PSMNetDilation.DILATION,
+        use_off=cfg.PSMNetDilation.USE_OFF,
     )
     return model

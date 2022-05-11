@@ -9,5 +9,6 @@ def build_model(cfg):
         set_zero=cfg.PSMNetGrad.SET_ZERO,
         dilation=cfg.PSMNetGrad.DILATION,
         epsilon=cfg.PSMNetGrad.EPSILON,
+        use_off=cfg.PSMNetGrad.USE_OFF,
     )
     return model

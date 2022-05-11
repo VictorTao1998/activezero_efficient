@@ -86,13 +86,13 @@ class DisparityRegression(nn.Module):
 
 
 class FeatureExtraction(nn.Module):
-    def __init__(self):
+    def __init__(self, in_channels):
         super(FeatureExtraction, self).__init__()
         # CNN module
         self.inplanes = 32
         # conv0_1, conv0_2, conv0_3
         self.firstconv = nn.Sequential(
-            convbn(1, 32, 3, 2, 1, 1),
+            convbn(in_channels, 32, 3, 2, 1, 1),
             nn.ReLU(inplace=True),
             convbn(32, 32, 3, 1, 1, 1),
             nn.ReLU(inplace=True),

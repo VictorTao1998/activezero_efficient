@@ -37,6 +37,8 @@ class MessyTableDataset(Dataset):
         data_aug_cfg=None,
         num_samples: int = 0,
         dilation_factor: int = 10,
+        left_off_name="",
+        right_off_name="",
     ):
         self.mode = mode
 
@@ -58,6 +60,7 @@ class MessyTableDataset(Dataset):
             left_pattern_name,
             right_pattern_name,
         )
+        self.left_off_name, self.right_off_name = left_off_name, right_off_name
         self.label_name = label_name
         self.num_classes = num_classes
         self.depth_r_name = depth_r_name
@@ -116,6 +119,17 @@ class MessyTableDataset(Dataset):
             assert (
                 patter_h == 540 and pattern_w == 960
             ), f"img_pattern_l should be processed to H=540, W=960. {img_dir / self.left_pattern_name}"
+
+        if self.left_off_name and self.right_off_name:
+            img_off_l = np.array(Image.open(img_dir / self.left_off_name).convert(mode="L")) / 255  # [H, W]
+            img_off_r = np.array(Image.open(img_dir / self.right_off_name).convert(mode="L")) / 255  # [H, W]
+            off_h, off_w = img_off_l.shape[:2]
+            if off_h in (720, 1080):
+                img_off_l = cv2.resize(img_off_l, (960, 540), interpolation=cv2.INTER_CUBIC)
+                img_off_r = cv2.resize(img_off_r, (960, 540), interpolation=cv2.INTER_CUBIC)
+
+            off_h, off_w = img_off_l.shape[:2]  # (960, 540)
+            assert off_h == 540 and off_w == 960, f"Only support H=540, W=960. Current input: H={off_h}, W={off_w}"
 
         if self.depth_name and self.meta_name:
             img_depth_l = (
@@ -207,6 +221,10 @@ class MessyTableDataset(Dataset):
             img_pattern_l = crop(img_pattern_l)
             img_pattern_r = crop(img_pattern_r)
 
+        if self.left_off_name and self.right_off_name:
+            img_off_l = crop(img_off_l)
+            img_off_r = crop(img_off_r)
+
         if self.normal_name:
             img_normal_l = crop(img_normal_l)
 
@@ -242,6 +260,11 @@ class MessyTableDataset(Dataset):
         if self.left_pattern_name and self.right_pattern_name:
             data_dict["img_pattern_l"] = torch.from_numpy(img_pattern_l).float().unsqueeze(0)
             data_dict["img_pattern_r"] = torch.from_numpy(img_pattern_r).float().unsqueeze(0)
+
+        if self.left_off_name and self.right_off_name:
+            data_dict["img_off_l"] = crop(img_off_l)
+            data_dict["img_off_r"] = crop(img_off_r)
+
         if self.normal_name:
             data_dict["img_normal_l"] = torch.from_numpy(img_normal_l).float().permute(2, 0, 1)
         if self.label_name:

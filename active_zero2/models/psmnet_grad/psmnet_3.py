@@ -91,6 +91,7 @@ class PSMNetGrad(nn.Module):
         set_zero: bool,
         dilation: int,
         epsilon: float = 1.0,
+            use_off: bool = False,
     ):
         super(PSMNetGrad, self).__init__()
         self.min_disp = min_disp
@@ -98,6 +99,7 @@ class PSMNetGrad(nn.Module):
         self.num_disp = num_disp
         self.dilation = dilation
         self.epsilon = epsilon  # for grad exp weight
+        self.use_off = use_off
         assert num_disp % 4 == 0, "Num_disp % 4 should be 0"
         self.num_disp_4 = num_disp // 4
         self.set_zero = set_zero  # set zero for invalid reference image cost volume
@@ -106,7 +108,7 @@ class PSMNetGrad(nn.Module):
         self.disp_list_4 = torch.linspace(min_disp, max_disp, self.num_disp_4) / 4
         self.disp_regression = DisparityRegression(min_disp, max_disp, num_disp)
 
-        self.feature_extraction = FeatureExtraction()
+        self.feature_extraction = FeatureExtraction(2 if use_off else 1)
 
         self.dres0 = nn.Sequential(
             convbn_3d(64, 32, 3, 1, 1),
@@ -160,6 +162,10 @@ class PSMNetGrad(nn.Module):
 
     def forward(self, data_batch):
         img_L, img_R = data_batch["img_l"], data_batch["img_r"]
+        if self.use_off:
+            img_off_L, img_off_R = data_batch["img_off_l"], data_batch["img_off_r"]
+            img_L = torch.cat([img_L, img_off_L], dim=1)
+            img_R = torch.cat([img_R, img_off_R], dim=1)
         refimg_feature = self.feature_extraction(img_L)  # [bs, 32, H/4, W/4]
         targetimg_feature = self.feature_extraction(img_R)
 
