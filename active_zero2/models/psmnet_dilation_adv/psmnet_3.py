@@ -4,6 +4,7 @@ import torch
 
 from active_zero2.models.psmnet_dilation_adv.psmnet_submodule_3 import *
 from active_zero2.utils.reprojection import compute_reproj_loss_patch
+from active_zero2.models.psmnet_dilation_adv.utils import DispGrad
 
 
 class hourglass(nn.Module):
@@ -180,6 +181,8 @@ class PSMNetDilation(nn.Module):
             elif isinstance(m, nn.Linear):
                 m.bias.data.zero_()
 
+        self.disp_grad = DispGrad()
+
     def forward(self, data_batch):
         img_L, img_R = data_batch["img_l"], data_batch["img_r"]
         refimg_feature = self.feature_extraction(img_L)  # [bs, 32, H/4, W/4]
@@ -339,6 +342,8 @@ class PSMNetADV(nn.Module):
         self.wgangp_norm = wgangp_norm
         self.wgangp_lambda = wgangp_lambda
 
+        self.disp_grad = DispGrad()
+
     def forward(self, data_batch):
         pred_dict = self.psmnet(data_batch)
         return pred_dict
@@ -488,10 +493,10 @@ class PSMNetADV(nn.Module):
             batch_size, _, D, H, W = pred_prob_volume.shape
             disp_encoded = (
                 self.disp_encoded.unsqueeze(0)
-                    .unsqueeze(-1)
-                    .unsqueeze(-1)
-                    .expand(batch_size, 2 * self.disp_channels_half, D, H, W)
-                    .to(pred_prob_volume.device)
+                .unsqueeze(-1)
+                .unsqueeze(-1)
+                .expand(batch_size, 2 * self.disp_channels_half, D, H, W)
+                .to(pred_prob_volume.device)
             )
             pred_prob_volume = pred_prob_volume.expand(batch_size, self.disp_channels_half, D, H, W)
             pred_prob_volume = torch.cat([pred_prob_volume, disp_encoded], dim=1)
@@ -522,7 +527,7 @@ if __name__ == "__main__":
         set_zero=False,
         dilation=3,
         d_channels=16,
-        disp_encoding=(), #(0.5, 2),
+        disp_encoding=(),  # (0.5, 2),
         wgangp_norm=1,
         wgangp_lambda=10,
     )

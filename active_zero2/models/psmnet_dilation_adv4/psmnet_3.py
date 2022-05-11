@@ -4,6 +4,7 @@ import torch
 
 from active_zero2.models.psmnet_dilation_adv4.psmnet_submodule_3 import *
 from active_zero2.utils.reprojection import compute_reproj_loss_patch
+from active_zero2.models.psmnet_dilation_adv4.utils import DispGrad
 
 
 class hourglass(nn.Module):
@@ -200,6 +201,8 @@ class PSMNetDilation(nn.Module):
                 m.bias.data.zero_()
             elif isinstance(m, nn.Linear):
                 m.bias.data.zero_()
+
+        self.disp_grad = DispGrad()
 
     def forward(self, data_batch):
         img_L, img_R = data_batch["img_l"], data_batch["img_r"]
