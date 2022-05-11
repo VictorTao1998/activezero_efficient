@@ -349,10 +349,12 @@ _C.PSMNetADV.MAX_DISP = 0
 _C.PSMNetADV.NUM_DISP = 0
 _C.PSMNetADV.SET_ZERO = False
 _C.PSMNetADV.DILATION = 3
+_C.PSMNetADV.EPSILON = 1.0
 _C.PSMNetADV.D_CHANNELS = 16
 _C.PSMNetADV.DISP_ENCODING = (PI / 32, PI / 8, PI / 2)
 _C.PSMNetADV.WGANGP_NORM = 1.0
 _C.PSMNetADV.WGANGP_LAMBDA = 10.0
+_C.PSMNetADV.USE_SIM_PRED = False  # ADV between sim disp pred and real disp pred or gt disp and real disp pred
 
 _C.PSMNetADV4 = CN()
 _C.PSMNetADV4.MIN_DISP = 0
@@ -360,10 +362,12 @@ _C.PSMNetADV4.MAX_DISP = 0
 _C.PSMNetADV4.NUM_DISP = 0
 _C.PSMNetADV4.SET_ZERO = False
 _C.PSMNetADV4.DILATION = 3
+_C.PSMNetADV4.EPSILON = 1.0
 _C.PSMNetADV4.D_CHANNELS = 16
 _C.PSMNetADV4.DISP_ENCODING = (PI / 32, PI / 8, PI / 2)
 _C.PSMNetADV4.WGANGP_NORM = 1.0
 _C.PSMNetADV4.WGANGP_LAMBDA = 10.0
+_C.PSMNetADV4.USE_SIM_PRED = False  # ADV between sim disp pred and real disp pred or gt disp and real disp pred
 
 _C.PSMNetGrad2DADV = CN()
 _C.PSMNetGrad2DADV.MIN_DISP = 0

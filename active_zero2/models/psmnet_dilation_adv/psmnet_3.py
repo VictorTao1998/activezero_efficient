@@ -287,6 +287,7 @@ class PSMNetADV(nn.Module):
         num_disp: int,
         set_zero: bool,
         dilation: int,
+        epsilon: float,
         d_channels: int,
         disp_encoding: Tuple[float],
         wgangp_norm: float,
@@ -299,6 +300,7 @@ class PSMNetADV(nn.Module):
         :param num_disp:
         :param set_zero:
         :param dilation:
+        :param epsilon: for grad exp weight
         # Adv
         :param d_channels: Discriminator base channels
         :param disp_encoding:
@@ -310,6 +312,7 @@ class PSMNetADV(nn.Module):
         self.max_disp = max_disp
         self.num_disp = num_disp
         self.dilation = dilation
+        self.epsilon = epsilon
         assert num_disp % 4 == 0, "Num_disp % 4 should be 0"
         self.num_disp_4 = num_disp // 4
         self.set_zero = set_zero  # set zero for invalid reference image cost volume
@@ -468,6 +471,7 @@ class PSMNetADV(nn.Module):
 
         return_dict = {
             "gt_prob_volume": gt_prob_volume,
+            "pred_prob_volume": pred_prob_volume,
             "err_d_real": err_d_real.item(),
             "err_d_fake": err_d_fake.item(),
         }
@@ -492,6 +496,22 @@ class PSMNetADV(nn.Module):
             pred_prob_volume = pred_prob_volume.expand(batch_size, self.disp_channels_half, D, H, W)
             pred_prob_volume = torch.cat([pred_prob_volume, disp_encoded], dim=1)
         return self.D(pred_prob_volume).mean()
+
+    def compute_grad_loss(self, data_batch, pred_dict):
+        disp_pred = pred_dict["pred3"]
+        disp_grad_pred = self.disp_grad(disp_pred)
+
+        if "img_disp_l" in data_batch:
+            disp_gt = data_batch["img_disp_l"]
+            disp_grad_gt = self.disp_grad(disp_gt)
+            grad_diff = torch.abs(disp_grad_pred - disp_grad_gt)
+            grad_diff = grad_diff * torch.exp(-torch.abs(disp_grad_gt) * self.epsilon)
+            mask = (disp_gt < self.max_disp) * (disp_gt > self.min_disp)
+            mask.detach()
+            loss = torch.mean(grad_diff * mask)
+        else:
+            loss = torch.mean(torch.abs(disp_grad_pred))
+        return loss
 
 
 if __name__ == "__main__":

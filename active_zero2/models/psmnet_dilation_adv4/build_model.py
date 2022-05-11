@@ -8,6 +8,7 @@ def build_model(cfg):
         num_disp=cfg.PSMNetADV4.NUM_DISP,
         set_zero=cfg.PSMNetADV4.SET_ZERO,
         dilation=cfg.PSMNetADV4.DILATION,
+        epsilon=cfg.PSMNetADV4.EPSILON,
         d_channels=cfg.PSMNetADV4.D_CHANNELS,
         disp_encoding=cfg.PSMNetADV4.DISP_ENCODING,
         wgangp_norm=cfg.PSMNetADV4.WGANGP_NORM,

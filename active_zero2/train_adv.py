@@ -264,7 +264,16 @@ if __name__ == "__main__":
             k: v.cuda(non_blocking=True) for k, v in real_data_batch.items() if isinstance(v, torch.Tensor)
         }
         if "img_disp_l" not in real_data_batch:
-            real_data_batch["gt_prob_volume"] = sim_D_dict["gt_prob_volume"]
+            if cfg.MODEL_TYPE == "PSMNetADV":
+                if cfg.PSMNetADV.USE_SIME_PRED:
+                    real_data_batch["gt_prob_volume"] = sim_D_dict["pred_prob_volume"]
+                else:
+                    real_data_batch["gt_prob_volume"] = sim_D_dict["gt_prob_volume"]
+            if cfg.MODEL_TYPE == "PSMNetADV4":
+                if cfg.PSMNetADV4.USE_SIME_PRED:
+                    real_data_batch["gt_prob_volume"] = sim_D_dict["pred_prob_volume"]
+                else:
+                    real_data_batch["gt_prob_volume"] = sim_D_dict["gt_prob_volume"]
         real_pred_dict = model_parallel(real_data_batch)
         real_D_dict = model.D_backward(real_data_batch, real_pred_dict)
         for k, v in real_D_dict.items():
@@ -303,7 +312,11 @@ if __name__ == "__main__":
             sim_disp *= cfg.LOSS.SIM_DISP.WEIGHT
             loss += sim_disp
             loss_dict["loss_sim_disp"] = sim_disp
-
+        if cfg.LOSS.SIM_GRAD > 0:
+            grad_loss = model.compute_grad_loss(sim_data_batch, sim_pred_dict)
+            grad_loss *= cfg.LOSS.SIM_GRAD
+            loss += grad_loss
+            loss_dict["loss_sim_grad"] = grad_loss
         loss_dict["loss_sim_total"] = loss
         loss.backward()
 
@@ -328,6 +341,12 @@ if __name__ == "__main__":
             real_disp *= cfg.LOSS.REAL_DISP.WEIGHT
             loss += real_disp
             loss_dict["loss_real_disp"] = real_disp
+
+        if cfg.LOSS.REAL_GRAD > 0:
+            grad_loss = model.compute_grad_loss(real_data_batch, real_pred_dict)
+            grad_loss *= cfg.LOSS.REAL_GRAD
+            loss += grad_loss
+            loss_dict["loss_real_grad"] = grad_loss
 
         # only compute adversarial loss for real data
         if cur_iter > cfg.ADV_ITER:
