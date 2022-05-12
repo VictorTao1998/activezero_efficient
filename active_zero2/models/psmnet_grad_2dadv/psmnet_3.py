@@ -280,6 +280,7 @@ class PSMNetGrad2DADV(nn.Module):
         wgangp_norm: float,
         wgangp_lambda: float,
         sub_avg_size: int,
+        disp_grad_norm: str,
     ):
         """
         :param min_disp:
@@ -292,6 +293,7 @@ class PSMNetGrad2DADV(nn.Module):
         :param wgangp_norm: WGANGP gradient penalty norm
         :param wgangp_lambda: WGANGP gradient penalty coefficient
         :param sub_avg_size: subtract the local average in discriminator
+        :param disp_grad_norm: L1 or L2
         """
         super(PSMNetGrad2DADV, self).__init__()
         self.min_disp = min_disp
@@ -311,6 +313,8 @@ class PSMNetGrad2DADV(nn.Module):
         self.D = Discriminator2D(base_channels=d_channels, sub_avg_size=sub_avg_size, bias=False)
         self.wgangp_norm = wgangp_norm
         self.wgangp_lambda = wgangp_lambda
+        self.disp_grad_norm = disp_grad_norm
+        assert self.disp_grad_norm in ("L1", "L2")
 
     def forward(self, data_batch):
         pred_dict = self.psmnet(data_batch)
@@ -368,13 +372,19 @@ class PSMNetGrad2DADV(nn.Module):
         if "img_disp_l" in data_batch:
             disp_gt = data_batch["img_disp_l"]
             disp_grad_gt = self.disp_grad(disp_gt)
-            grad_diff = torch.abs(disp_grad_pred - disp_grad_gt)
+            if self.disp_grad_norm == "L1":
+                grad_diff = torch.abs(disp_grad_pred - disp_grad_gt)
+            elif self.disp_grad_norm == "L2":
+                grad_diff = (disp_grad_pred - disp_grad_gt) ** 2
             grad_diff = grad_diff * torch.exp(-torch.abs(disp_grad_gt) * self.epsilon)
             mask = (disp_gt < self.max_disp) * (disp_gt > self.min_disp)
             mask.detach()
             loss = torch.mean(grad_diff * mask)
         else:
-            loss = torch.mean(torch.abs(disp_grad_pred))
+            if self.disp_grad_norm == "L1":
+                loss = torch.mean(torch.abs(disp_grad_pred))
+            elif self.disp_grad_norm == "L2":
+                loss = torch.mean(disp_grad_pred**2)
         return loss
 
     def calc_grad_penalty(self, real_disp_pred: torch.Tensor, fake_disp_pred: torch.Tensor):

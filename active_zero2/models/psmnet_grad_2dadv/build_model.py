@@ -13,5 +13,6 @@ def build_model(cfg):
         wgangp_norm=cfg.PSMNetGrad2DADV.WGANGP_NORM,
         wgangp_lambda=cfg.PSMNetGrad2DADV.WGANGP_LAMBDA,
         sub_avg_size=cfg.PSMNetGrad2DADV.SUB_AVG_SIZE,
+        disp_grad_norm=cfg.PSMNetGrad2DADV.DISP_GRAD_NORM
     )
     return model
