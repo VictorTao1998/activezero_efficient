@@ -13,6 +13,7 @@ from active_zero2.models.psmnet_grad_2dadv.build_model import build_model as bui
 MODEL_LIST = (
     "PSMNet",
     "CFNet",
+    "SMDNet",
     "PSMNetRange",
     "PSMNetRange4",
     "PSMNetDilation",

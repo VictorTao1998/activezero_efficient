@@ -352,10 +352,6 @@ if __name__ == "__main__":
                     loss += grad_loss
                     loss_dict["loss_sim_grad"] = grad_loss
             
-            if cfg.MODEL_TYPE == "SMDNet":
-                if cfg.LOSS.SIM_SMD.WEIGHT > 0:
-                    for error in pred_dict.values():
-                        loss+= error
             loss_dict["loss_sim_total"] = loss
             loss.backward()
 
@@ -478,18 +474,13 @@ if __name__ == "__main__":
                             loss += sim_disp
                             loss_dict["loss_sim_disp"] = sim_disp
 
-                         if cfg.MODEL_TYPE == "PSMNetGrad":
+                        if cfg.MODEL_TYPE == "PSMNetGrad":
                             if cfg.LOSS.SIM_GRAD > 0:
                                 grad_loss = model.compute_grad_loss(data_batch, pred_dict)
                                 grad_loss *= cfg.LOSS.SIM_GRAD
                                 loss += grad_loss
                                 loss_dict["loss_sim_grad"] = grad_loss
                                 
-                        if cfg.MODEL_TYPE == "SMDNet":
-                            if cfg.LOSS.SIM_SMD.WEIGHT > 0:
-                                for error in pred_dict.values():
-                                    loss+= error
-
                     batch_time = time.time() - tic
                     val_meters.update(time=batch_time, data=data_time)
                     val_meters.update(**loss_dict)
