@@ -2,30 +2,31 @@ import os
 import os.path as osp
 import sys
 
-
 _ROOT_DIR = os.path.abspath(osp.join(osp.dirname(__file__), ".."))
 sys.path.insert(0, _ROOT_DIR)
+from loguru import logger
 from PIL import Image
 
 from data_rendering.utils.render_utils import *
 
 
-def render_scene(scene_id, repo_root, target_root, spp, num_views, rand_pattern, fixed_angle, primitives):
+def render_scene(
+    sim: sapien.Engine,
+    renderer: sapien.KuafuRenderer,
+    scene_id,
+    repo_root,
+    target_root,
+    spp,
+    num_views,
+    rand_pattern,
+    fixed_angle,
+    primitives,
+    primitives_v2,
+    rand_lighting,
+    rand_table,
+    rand_env,
+):
     materials_root = os.path.join(repo_root, "data_rendering/materials")
-
-    # build scene
-    sim = sapien.Engine()
-    sim.set_log_level("err")
-    sapien.KuafuRenderer.set_log_level("err")
-
-    render_config = sapien.KuafuConfig()
-    render_config.use_viewer = False
-    render_config.use_denoiser = True
-    render_config.spp = spp
-    render_config.max_bounces = 8
-
-    renderer = sapien.KuafuRenderer(render_config)
-    sim.set_renderer(renderer)
 
     scene_config = sapien.SceneConfig()
     scene_config.solver_iterations = 25
@@ -35,17 +36,21 @@ def render_scene(scene_id, repo_root, target_root, spp, num_views, rand_pattern,
     scene_config.default_dynamic_friction = 0.5
     scene_config.default_static_friction = 0.5
     scene = sim.create_scene(scene_config)
-
-    ground_material = renderer.create_material()
-    ground_material.base_color = np.array([10, 10, 10, 256]) / 256
-    ground_material.specular = 0.5
-    scene.add_ground(-2.0, render_material=ground_material)
     scene.set_timestep(1 / 240)
+
+    if not rand_env:
+        ground_material = renderer.create_material()
+        ground_material.base_color = np.array([10, 10, 10, 256]) / 256
+        ground_material.specular = 0.5
+        scene.add_ground(-2.0, render_material=ground_material)
 
     table_pose_np = np.loadtxt(os.path.join(repo_root, "data_rendering/materials/optical_table/pose.txt"))
     table_pose = sapien.Pose(table_pose_np[:3], table_pose_np[3:])
 
-    load_table(scene, os.path.join(repo_root, "data_rendering/materials/optical_table"), renderer, table_pose)
+    if rand_table:
+        load_rand_table(scene, os.path.join(repo_root, "data_rendering/materials/optical_table"), renderer, table_pose)
+    else:
+        load_table(scene, os.path.join(repo_root, "data_rendering/materials/optical_table"), renderer, table_pose)
 
     # Add camera
     cam_intrinsic_base = np.loadtxt(os.path.join(materials_root, "cam_intrinsic_base.txt"))
@@ -78,12 +83,116 @@ def render_scene(scene_id, repo_root, target_root, spp, num_views, rand_pattern,
     )
 
     # Add lights
-    scene.set_ambient_light([0.5, 0.5, 0.5])
-    plight1 = scene.add_point_light([-0.3, -0.3, 2.5], [30, 30, 30])
-    plight2 = scene.add_point_light([2, -2, 2.5], [10, 10, 10])
-    plight3 = scene.add_point_light([-2, 2, 2.5], [10, 10, 10])
-    plight4 = scene.add_point_light([2, 2, 2.5], [10, 10, 10])
-    plight5 = scene.add_point_light([-2, -2, 2.5], [10, 10, 10])
+    if rand_env:
+        ambient_light = np.random.rand(3)
+        scene.set_ambient_light(ambient_light)
+        scene.set_environment_map(get_random_env_file())
+
+        # change light
+        def lights_on():
+            ambient_light = np.random.rand(3)
+            scene.set_ambient_light(ambient_light)
+            scene.set_environment_map(get_random_env_file())
+
+            alight.set_color([0.0, 0.0, 0.0])
+
+        def lights_off():
+            ambient_light = np.random.rand(3) * 0.05
+            scene.set_ambient_light(ambient_light)
+            alight_color = np.random.rand(3) * np.array((60, 20, 20)) + np.array([30, 10, 10])
+            scene.set_environment_map(get_random_env_file())
+
+            alight.set_color(alight_color)
+
+        def light_off_without_alight():
+            alight.set_color([0.0, 0.0, 0.0])
+
+    elif rand_lighting:
+        ambient_light = np.random.rand(3)
+        scene.set_ambient_light(ambient_light)
+        height = np.random.rand() + 2
+        light_1_color = np.random.rand(3) * 20 + 20
+        light_2_color = np.random.rand(3) * 10 + 5
+        light_3_color = np.random.rand(3) * 10 + 5
+        light_4_color = np.random.rand(3) * 10 + 5
+        light_5_color = np.random.rand(3) * 10 + 5
+        plight1 = scene.add_point_light([-0.3, -0.3, height], light_1_color)
+        plight2 = scene.add_point_light([2, -2, height], light_2_color)
+        plight3 = scene.add_point_light([-2, 2, height], light_3_color)
+        plight4 = scene.add_point_light([2, 2, height], light_4_color)
+        plight5 = scene.add_point_light([-2, -2, height], light_5_color)
+
+        # change light
+        def lights_on():
+            ambient_light = np.random.rand(3)
+            scene.set_ambient_light(ambient_light)
+            light_1_color = np.random.rand(3) * 20 + 20
+            light_2_color = np.random.rand(3) * 10 + 5
+            light_3_color = np.random.rand(3) * 10 + 5
+            light_4_color = np.random.rand(3) * 10 + 5
+            light_5_color = np.random.rand(3) * 10 + 5
+            plight1.set_color(light_1_color)
+            plight2.set_color(light_2_color)
+            plight3.set_color(light_3_color)
+            plight4.set_color(light_4_color)
+            plight5.set_color(light_5_color)
+            alight.set_color([0.0, 0.0, 0.0])
+
+        def lights_off():
+            ambient_light = np.random.rand(3) * 0.05
+            scene.set_ambient_light(ambient_light)
+            alight_color = np.random.rand(3) * np.array((60, 20, 20)) + np.array([30, 10, 10])
+            light_1_color = np.random.rand(3) * 20 + 20
+            light_2_color = np.random.rand(3) * 10 + 5
+            light_3_color = np.random.rand(3) * 10 + 5
+            light_4_color = np.random.rand(3) * 10 + 5
+            light_5_color = np.random.rand(3) * 10 + 5
+            plight1.set_color(light_1_color * 0.01)
+            plight2.set_color(light_2_color * 0.01)
+            plight3.set_color(light_3_color * 0.01)
+            plight4.set_color(light_4_color * 0.01)
+            plight5.set_color(light_5_color * 0.01)
+            alight.set_color(alight_color)
+
+        def light_off_without_alight():
+            alight.set_color([0.0, 0.0, 0.0])
+
+    else:
+        scene.set_ambient_light([0.5, 0.5, 0.5])
+        plight1 = scene.add_point_light([-0.3, -0.3, 2.5], [30, 30, 30])
+        plight2 = scene.add_point_light([2, -2, 2.5], [10, 10, 10])
+        plight3 = scene.add_point_light([-2, 2, 2.5], [10, 10, 10])
+        plight4 = scene.add_point_light([2, 2, 2.5], [10, 10, 10])
+        plight5 = scene.add_point_light([-2, -2, 2.5], [10, 10, 10])
+        # change light
+        def lights_on():
+            scene.set_ambient_light([0.5, 0.5, 0.5])
+            plight1.set_color([30, 30, 30])
+            plight2.set_color([10, 10, 10])
+            plight3.set_color([10, 10, 10])
+            plight4.set_color([10, 10, 10])
+            plight5.set_color([10, 10, 10])
+            alight.set_color([0.0, 0.0, 0.0])
+
+        def lights_off():
+            p_scale = 4.0
+            scene.set_ambient_light([0.03, 0.03, 0.03])
+            plight1.set_color([0.3 * p_scale, 0.1 * p_scale, 0.1 * p_scale])
+            plight2.set_color([0.1 * p_scale, 0.03 * p_scale, 0.03 * p_scale])
+            plight3.set_color([0.1 * p_scale, 0.03 * p_scale, 0.03 * p_scale])
+            plight4.set_color([0.1 * p_scale, 0.03 * p_scale, 0.03 * p_scale])
+            plight5.set_color([0.1 * p_scale, 0.03 * p_scale, 0.03 * p_scale])
+            alight.set_color([60.0, 20.0, 20.0])
+
+        def light_off_without_alight():
+            p_scale = 4.0
+            scene.set_ambient_light([0.03, 0.03, 0.03])
+            plight1.set_color([0.3 * p_scale, 0.1 * p_scale, 0.1 * p_scale])
+            plight2.set_color([0.1 * p_scale, 0.03 * p_scale, 0.03 * p_scale])
+            plight3.set_color([0.1 * p_scale, 0.03 * p_scale, 0.03 * p_scale])
+            plight4.set_color([0.1 * p_scale, 0.03 * p_scale, 0.03 * p_scale])
+            plight5.set_color([0.1 * p_scale, 0.03 * p_scale, 0.03 * p_scale])
+            alight.set_color([0.0, 0.0, 0.0])
 
     mount_T = t3d.quaternions.quat2mat((-0.5, 0.5, 0.5, -0.5))
     fov = np.random.uniform(1.3, 2.0)
@@ -117,36 +226,6 @@ def render_scene(scene_id, repo_root, target_root, spp, num_views, rand_pattern,
             tex_path=os.path.join(materials_root, "d415-pattern-sq.png"),
         )
 
-    # change light
-    def lights_on():
-        scene.set_ambient_light([0.5, 0.5, 0.5])
-        plight1.set_color([30, 30, 30])
-        plight2.set_color([10, 10, 10])
-        plight3.set_color([10, 10, 10])
-        plight4.set_color([10, 10, 10])
-        plight5.set_color([10, 10, 10])
-        alight.set_color([0.0, 0.0, 0.0])
-
-    def lights_off():
-        p_scale = 4.0
-        scene.set_ambient_light([0.03, 0.03, 0.03])
-        plight1.set_color([0.3 * p_scale, 0.1 * p_scale, 0.1 * p_scale])
-        plight2.set_color([0.1 * p_scale, 0.03 * p_scale, 0.03 * p_scale])
-        plight3.set_color([0.1 * p_scale, 0.03 * p_scale, 0.03 * p_scale])
-        plight4.set_color([0.1 * p_scale, 0.03 * p_scale, 0.03 * p_scale])
-        plight5.set_color([0.1 * p_scale, 0.03 * p_scale, 0.03 * p_scale])
-        alight.set_color([60.0, 20.0, 20.0])
-
-    def light_off_without_alight():
-        p_scale = 4.0
-        scene.set_ambient_light([0.03, 0.03, 0.03])
-        plight1.set_color([0.3 * p_scale, 0.1 * p_scale, 0.1 * p_scale])
-        plight2.set_color([0.1 * p_scale, 0.03 * p_scale, 0.03 * p_scale])
-        plight3.set_color([0.1 * p_scale, 0.03 * p_scale, 0.03 * p_scale])
-        plight4.set_color([0.1 * p_scale, 0.03 * p_scale, 0.03 * p_scale])
-        plight5.set_color([0.1 * p_scale, 0.03 * p_scale, 0.03 * p_scale])
-        alight.set_color([0.0, 0.0, 0.0])
-
     cam_extrinsic_list = np.load(os.path.join(materials_root, "cam_db_neoneo.npy"))
     if fixed_angle:
         assert num_views <= cam_extrinsic_list.shape[0]
@@ -171,7 +250,16 @@ def render_scene(scene_id, repo_root, target_root, spp, num_views, rand_pattern,
         for i in range(num_asset):
             info = load_random_primitives(scene, renderer=renderer, idx=i)
             primitive_info.update(info)
+    elif primitives_v2:
+        num_asset = random.randint(PRIMITIVE_MIN, PRIMITIVE_MAX)
+        primitive_info = {}
+        for i in range(num_asset):
+            info = load_random_primitives_v2(scene, renderer=renderer, idx=i)
+            primitive_info.update(info)
     else:
+        if not os.path.exists(os.path.join(SCENE_DIR, f"{scene_id}/input.json")):
+            logger.warning(f"{SCENE_DIR}/{scene_id}/input.json not exists.")
+            return
         world_js = json.load(open(os.path.join(SCENE_DIR, f"{scene_id}/input.json"), "r"))
         assets = world_js.keys()
         for obj_name in assets:
@@ -181,6 +269,7 @@ def render_scene(scene_id, repo_root, target_root, spp, num_views, rand_pattern,
                 renderer=renderer,
                 pose=sapien.Pose.from_transformation_matrix(world_js[obj_name]),
                 is_kinematic=True,
+                material_name="kuafu_material_new2",
             )
 
     for view_id in range(num_views):
@@ -293,25 +382,38 @@ def render_scene(scene_id, repo_root, target_root, spp, num_views, rand_pattern,
             "intrinsic_l": cam_ir_intrinsic,
             "intrinsic_r": cam_ir_intrinsic,
         }
-        if primitives:
+        if primitives or primitives_v2:
             scene_info["primitives"] = primitive_info
 
         with open(os.path.join(folder_path, "meta.pkl"), "wb") as f:
             pickle.dump(scene_info, f)
 
-        print(f"finish {folder_path} rendering")
+        logger.info(f"finish {folder_path} rendering")
+    scene = None
 
 
-def render_gt_depth_label(scene_id, repo_root, target_root, spp, num_views, rand_pattern, fixed_angle, primitives):
+def render_gt_depth_label(
+    sim: sapien.Engine,
+    renderer: sapien.VulkanRenderer,
+    scene_id,
+    repo_root,
+    target_root,
+    spp,
+    num_views,
+    rand_pattern,
+    fixed_angle,
+    primitives,
+    primitives_v2,
+):
     materials_root = os.path.join(repo_root, "data_rendering/materials")
 
     # build scene
-    sim = sapien.Engine()
-    sim.set_log_level("err")
-
-    renderer = sapien.VulkanRenderer(offscreen_only=True)
-    renderer.set_log_level("err")
-    sim.set_renderer(renderer)
+    # sim = sapien.Engine()
+    # sim.set_log_level("err")
+    #
+    # renderer = sapien.VulkanRenderer(offscreen_only=True)
+    # renderer.set_log_level("err")
+    # sim.set_renderer(renderer)
 
     scene_config = sapien.SceneConfig()
     scene_config.solver_iterations = 25
@@ -375,8 +477,20 @@ def render_gt_depth_label(scene_id, repo_root, target_root, spp, num_views, rand
         for i in range(num_asset):
             primitive = primitives_info[f"obj_{i}"]
             load_random_primitives_from_info(scene, renderer=renderer, idx=i, primitive_info=primitive)
+    elif primitives_v2:
+        # Load primitives from saved meta.pkl
+        main_meta_path = os.path.join(target_root, f"{scene_id}-0", "meta.pkl")
+        main_meta_info = load_pickle(main_meta_path)
+        primitives_info = main_meta_info["primitives"]
+        num_asset = len(primitives_info.keys())
+        for i in range(num_asset):
+            primitive = primitives_info[f"obj_{i}"]
+            load_random_primitives_from_info(scene, renderer=renderer, idx=i, primitive_info=primitive)
 
     else:
+        if not os.path.exists(os.path.join(SCENE_DIR, f"{scene_id}/input.json")):
+            logger.warning(f"{SCENE_DIR}/{scene_id}/input.json not exists.")
+            return
         world_js = json.load(open(os.path.join(SCENE_DIR, f"{scene_id}/input.json"), "r"))
         assets = world_js.keys()
         actors = []
@@ -414,6 +528,8 @@ def render_gt_depth_label(scene_id, repo_root, target_root, spp, num_views, rand
             cam_irl = hand_cam_irl
             cam_irr = hand_cam_irr
         cam_rgb.take_picture()
+        p = cam_rgb.get_color_rgba()
+        plt.imsave(os.path.join(folder_path, f"0000_rgb_vulkan.png"), p)
         pos = cam_rgb.get_float_texture("Position")
         depth = -pos[..., 2]
         depth = (depth * 1000.0).astype(np.uint16)
@@ -440,7 +556,7 @@ def render_gt_depth_label(scene_id, repo_root, target_root, spp, num_views, rand
         vis_depth = visualize_depth(depth)
         cv2.imwrite(os.path.join(folder_path, f"depthR_colored.png"), vis_depth)
 
-        if not primitives:
+        if not (primitives or primitives_v2):
             # render label image
             obj_segmentation = cam_rgb.get_uint32_texture("Segmentation")[..., 1]
 
@@ -496,7 +612,8 @@ def render_gt_depth_label(scene_id, repo_root, target_root, spp, num_views, rand
             sem_image_with_color = Image.fromarray(sem_labels_with_color.astype("uint8"))
             sem_image_with_color.save(os.path.join(folder_path, "labelR2.png"))
 
-        print(f"finish {folder_path} gt depth and seg")
+        logger.info(f"finish {folder_path} gt depth and seg")
+    scene = None
 
 
 if __name__ == "__main__":
@@ -511,7 +628,10 @@ if __name__ == "__main__":
     parser.add_argument("--rand-pattern", action="store_true")
     parser.add_argument("--fixed-angle", action="store_true")
     parser.add_argument("--primitives", action="store_true", help="use primitives")
+    parser.add_argument("--primitives-v2", action="store_true", help="use primitives v2")
     args = parser.parse_args()
+
+    assert not (args.primitives and args.primitives_v2), "primitives and v2 cannot be True in one run"
     render_scene(
         args.scene,
         repo_root=args.repo_root,
@@ -521,6 +641,7 @@ if __name__ == "__main__":
         rand_pattern=args.rand_pattern,
         fixed_angle=args.fixed_angle,
         primitives=args.primitives,
+        primitives_v2=args.primitives_v2,
     )
     render_gt_depth_label(
         args.scene,
@@ -531,4 +652,5 @@ if __name__ == "__main__":
         rand_pattern=args.rand_pattern,
         fixed_angle=args.fixed_angle,
         primitives=args.primitives,
+        primitives_v2=args.primitives_v2,
     )

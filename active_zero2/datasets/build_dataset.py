@@ -44,7 +44,10 @@ def build_dataset(cfg, mode, domain):
         num_classes=cfg.DATA.NUM_CLASSES,
         depth_r_name=dataset_cfg.DEPTH_R_NAME,
         data_aug_cfg=data_aug_cfg,
-        sample_data= (cfg.MODEL_TYPE == "SMDNet"),
+        num_samples=cfg.SMDNet.NUM_SAMPLES,
+        dilation_factor=cfg.SMDNet.DILATION,
+        left_off_name=dataset_cfg.LEFT_OFF_NAME,
+        right_off_name=dataset_cfg.RIGHT_OFF_NAME,
     )
 
     return dataset

@@ -10,7 +10,7 @@ from PIL import Image
 from torch.utils.data import Dataset
 from tqdm import tqdm
 
-from active_zero2.datasets.data_augmentation import data_augmentation
+from active_zero2.datasets.data_augmentation import SimIRNoise, data_augmentation
 from active_zero2.utils.io import load_pickle
 from active_zero2.utils.reprojection import apply_disparity, apply_disparity_v2
 
@@ -35,7 +35,10 @@ class MessyTableDataset(Dataset):
         num_classes: int = 17,
         depth_r_name: str = "",
         data_aug_cfg=None,
-        sample_data: str = "",
+        num_samples: int = 0,
+        dilation_factor: int = 10,
+        left_off_name="",
+        right_off_name="",
     ):
         self.mode = mode
         
@@ -46,7 +49,8 @@ class MessyTableDataset(Dataset):
             logger.error(f"Not exists root dir: {self.root_dir}")
 
         self.split_file = split_file
-        self.sample_data = sample_data
+        self.num_samples = num_samples
+        self.dilation_factor = dilation_factor
         self.height, self.width = height, width
         self.meta_name = meta_name
         self.depth_name = depth_name
@@ -56,14 +60,16 @@ class MessyTableDataset(Dataset):
             left_pattern_name,
             right_pattern_name,
         )
+        self.left_off_name, self.right_off_name = left_off_name, right_off_name
         self.label_name = label_name
         self.num_classes = num_classes
         self.depth_r_name = depth_r_name
+        self.sim_ir_noise = SimIRNoise(data_aug_cfg)
         self.data_aug = data_augmentation(data_aug_cfg)
 
         self.img_dirs = self._gen_path_list()
-        if (self.mode == "train" or self.mode == "val") and self.sample_data:
-            self.__init_grid()
+        if (self.mode == "train" or self.mode == "val") and num_samples:
+            self._init_grid()
 
         logger.info(
             f"MessyTableDataset: mode: {mode}, domain: {domain}, root_dir: {root_dir}, length: {len(self.img_dirs)},"
@@ -115,6 +121,17 @@ class MessyTableDataset(Dataset):
             assert (
                 patter_h == 540 and pattern_w == 960
             ), f"img_pattern_l should be processed to H=540, W=960. {img_dir / self.left_pattern_name}"
+
+        if self.left_off_name and self.right_off_name:
+            img_off_l = np.array(Image.open(img_dir / self.left_off_name).convert(mode="L")) / 255  # [H, W]
+            img_off_r = np.array(Image.open(img_dir / self.right_off_name).convert(mode="L")) / 255  # [H, W]
+            off_h, off_w = img_off_l.shape[:2]
+            if off_h in (720, 1080):
+                img_off_l = cv2.resize(img_off_l, (960, 540), interpolation=cv2.INTER_CUBIC)
+                img_off_r = cv2.resize(img_off_r, (960, 540), interpolation=cv2.INTER_CUBIC)
+
+            off_h, off_w = img_off_l.shape[:2]  # (960, 540)
+            assert off_h == 540 and off_w == 960, f"Only support H=540, W=960. Current input: H={off_h}, W={off_w}"
 
         if self.depth_name and self.meta_name:
             img_depth_l = (
@@ -206,6 +223,10 @@ class MessyTableDataset(Dataset):
             img_pattern_l = crop(img_pattern_l)
             img_pattern_r = crop(img_pattern_r)
 
+        if self.left_off_name and self.right_off_name:
+            img_off_l = crop(img_off_l)
+            img_off_r = crop(img_off_r)
+
         if self.normal_name:
             img_normal_l = crop(img_normal_l)
 
@@ -213,6 +234,8 @@ class MessyTableDataset(Dataset):
             img_label_l = crop_label(img_label_l)
 
         data_dict["dir"] = img_dir.name
+        img_l = self.sim_ir_noise.apply(img_l)
+        img_r = self.sim_ir_noise.apply(img_r)
         data_dict["img_l"] = self.data_aug(img_l).float()
         data_dict["img_r"] = self.data_aug(img_r).float()
         if self.depth_name and self.meta_name:
@@ -239,19 +262,27 @@ class MessyTableDataset(Dataset):
         if self.left_pattern_name and self.right_pattern_name:
             data_dict["img_pattern_l"] = torch.from_numpy(img_pattern_l).float().unsqueeze(0)
             data_dict["img_pattern_r"] = torch.from_numpy(img_pattern_r).float().unsqueeze(0)
+
+        if self.left_off_name and self.right_off_name:
+            data_dict["img_off_l"] = self.data_aug(img_off_l).float()
+            data_dict["img_off_r"] = self.data_aug(img_off_r).float()
+
         if self.normal_name:
             data_dict["img_normal_l"] = torch.from_numpy(img_normal_l).float().permute(2, 0, 1)
         if self.label_name:
             data_dict["img_label_l"] = torch.from_numpy(img_label_l).long()
-        if (self.mode == "train" or self.mode == "val") and self.sample_data:
-            sample_data = self.sampling(data_dict)
+        if (self.mode == "train" or self.mode == "val") and self.num_samples:
+            if self.depth_name and self.meta_name:
+                sample_data = self._sample_points(img_disp_l)
+            else:
+                sample_data = self._sample_points()
             data_dict.update(sample_data)
         return data_dict
 
     def __len__(self):
         return len(self.img_dirs)
 
-    def __init_grid(self):
+    def _init_grid(self):
         nu = np.linspace(0, self.width - 1, self.width)
         nv = np.linspace(0, self.height - 1, self.height)
         u, v = np.meshgrid(nu, nv)
@@ -259,14 +290,19 @@ class MessyTableDataset(Dataset):
         self.u = u.flatten()
         self.v = v.flatten()
 
-    def __get_coords(self, gt):
+    def _get_coords(self, gt_disp):
         #  Subpixel coordinates
         u = self.u + np.random.random_sample(self.u.size)
         v = self.v + np.random.random_sample(self.v.size)
 
+        u = np.clip(u, 0, self.width - 1)
+        v = np.clip(v, 0, self.height - 1)
+
         # Nearest neighbor
-        d = gt[np.clip(np.rint(v).astype(np.uint16), 0, self.height-1),
-                 np.clip(np.rint(u).astype(np.uint16), 0, self.width-1)]
+        d = gt_disp[
+            np.rint(v).astype(np.uint16),
+            np.rint(u).astype(np.uint16),
+        ]
 
         # Remove invalid disparitiy values
         u = u[np.nonzero(d)]
@@ -275,13 +311,69 @@ class MessyTableDataset(Dataset):
 
         return np.stack((u, v, d), axis=-1)
 
-    def sampling(self, render_data, sampling="random", num_sample=50000):
-        gt = render_data['img_disp_l'].data.numpy().squeeze()
+    def _get_coords_only(self):
+        #  Subpixel coordinates
+        u = self.u + np.random.random_sample(self.u.size)
+        v = self.v + np.random.random_sample(self.v.size)
 
-        # TODO IMPLEMENT DDA
-        if sampling == "random":
-            random_points = self.__get_coords(gt)
-            idx = np.random.choice(random_points.shape[0], num_sample)
+        u = np.clip(u, 0, self.width - 1)
+        v = np.clip(v, 0, self.height - 1)
+
+        return np.stack((u, v), axis=-1)
+
+    # SMDNet
+    def _sample_points(self, img_disp_l: np.ndarray or None = None):
+        if img_disp_l is None:
+            random_points = self._get_coords_only()
+            idx = np.random.choice(random_points.shape[0], self.num_samples)
             points = random_points[idx, :]
-        return {'img_points': np.array(points.T, dtype=np.float32),
-                'img_labels': np.array(points[:,2:3].T, dtype=np.float32)}
+            return {
+                "img_points": torch.from_numpy(points[:, :2].T).float(),
+            }
+        else:
+            edges = get_boundaries(img_disp_l, dilation=self.dilation_factor)
+            random_points = self._get_coords(img_disp_l * (1.0 - edges))
+            edge_points = self._get_coords(img_disp_l * edges)
+
+            # if edge points exist
+            if edge_points.shape[0] > 0:
+
+                # Check tot num of edge points
+                cond = edges.sum() // 2 - self.num_samples // 2 < 0
+                tot = (
+                    (self.num_samples - int(edges.sum()) // 2, int(edges.sum()) // 2)
+                    if cond
+                    else (self.num_samples // 2, self.num_samples // 2)
+                )
+
+                idx = np.random.choice(random_points.shape[0], tot[0])
+                idx_edges = np.random.choice(edge_points.shape[0], tot[1])
+                points = np.concatenate([edge_points[idx_edges, :], random_points[idx, :]], 0)
+            # use uniform sample otherwise
+            else:
+                random_points = self._get_coords(img_disp_l)
+                idx = np.random.choice(random_points.shape[0], self.num_samples)
+                points = random_points[idx, :]
+            return {
+                "img_points": torch.from_numpy(points[:, :2].T).float(),
+                "img_labels": torch.from_numpy(points[:, 2:3].T).float(),
+            }
+
+
+# SMDNet
+def get_boundaries(disp, th=1.0, dilation=10):
+    edges_y = np.logical_or(
+        np.pad(np.abs(disp[1:, :] - disp[:-1, :]) > th, ((1, 0), (0, 0))),
+        np.pad(np.abs(disp[:-1, :] - disp[1:, :]) > th, ((0, 1), (0, 0))),
+    )
+    edges_x = np.logical_or(
+        np.pad(np.abs(disp[:, 1:] - disp[:, :-1]) > th, ((0, 0), (1, 0))),
+        np.pad(np.abs(disp[:, :-1] - disp[:, 1:]) > th, ((0, 0), (0, 1))),
+    )
+    edges = np.logical_or(edges_y, edges_x).astype(np.float32)
+
+    if dilation > 0:
+        kernel = np.ones((dilation, dilation), np.uint8)
+        edges = cv2.dilate(edges, kernel, iterations=1)
+
+    return edges

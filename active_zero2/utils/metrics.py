@@ -3,16 +3,34 @@ import os.path as osp
 
 _ROOT_DIR = os.path.abspath(osp.join(osp.dirname(__file__), "../.."))
 
-from path import Path
+import csv
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import open3d as o3d
 import torch
 import torch.nn.functional as F
+from path import Path
 from tabulate import tabulate
 
 from active_zero2.utils.geometry import cal_normal_map, depth2pts_np
+from active_zero2.models.build_model import MODEL_LIST
+
+with open(osp.join(_ROOT_DIR, "data_rendering/materials/objects.csv"), "r") as f:
+    OBJECT_INFO = csv.reader(f)
+    OBJECT_INFO = list(OBJECT_INFO)[1:]
+    OBJECT_NAMES = [_[0] for _ in OBJECT_INFO]
+
+REAL_OBJECTS = [
+    "coca_cola",
+    "coffee_cup",
+    "gold_ball",
+    "jack_daniels",
+    "spellegrino",
+    "steel_ball",
+    "tennis_ball",
+    "voss",
+]
 
 
 class ErrorMetric(object):
@@ -25,13 +43,14 @@ class ErrorMetric(object):
         num_classes: int = 17,
         is_depth: bool = False,
     ):
-        assert model_type in ["PSMNet", "CFNet", "PSMNetRange", "PSMNetRange4", "SMDNet"], f"Unknown model type: [{model_type}]"
+        assert model_type in ("RealSense",) + MODEL_LIST, f"Unknown model type: [{model_type}]"
         self.model_type = model_type
         self.use_mask = use_mask
         self.max_disp = max_disp
         self.is_depth = is_depth
         self.depth_range = depth_range
         self.num_classes = num_classes
+        assert len(OBJECT_NAMES) == num_classes
         # load real robot masks
         mask_dir = Path(_ROOT_DIR) / "active_zero2/assets/real_robot_masks"
         self.real_robot_masks = {}
@@ -42,6 +61,10 @@ class ErrorMetric(object):
             self.real_robot_masks[mask_file.name[:-4]] = mask
 
         self.cmap = plt.get_cmap("jet")
+
+        # cutoff threshold
+        self.disp_diff_threshold = 8
+        self.depth_diff_threshold = 32e-3
 
     def reset(self):
         self.epe = []
@@ -60,6 +83,18 @@ class ErrorMetric(object):
         self.obj_normal_err = np.zeros(self.num_classes)
         self.obj_normal_err10 = np.zeros(self.num_classes)
         self.obj_count = np.zeros(self.num_classes)
+        self.real_disp_err = 0.0
+        self.real_depth_err = 0.0
+        self.real_depth_err4 = 0.0
+        self.real_normal_err = 0.0
+        self.real_normal_err10 = 0.0
+        self.real_count = 0
+        self.print_disp_err = 0.0
+        self.print_depth_err = 0.0
+        self.print_depth_err4 = 0.0
+        self.print_normal_err = 0.0
+        self.print_normal_err10 = 0.0
+        self.print_count = 0
 
     def compute(self, data_batch, pred_dict, save_folder="", real_data=False):
         """
@@ -70,14 +105,20 @@ class ErrorMetric(object):
         if "-300" in data_batch["dir"] and real_data:
             assert self.use_mask, "Use_mask should be True when evaluating real data"
 
-        if self.model_type == "PSMNet":
+        if self.model_type in (
+            "PSMNet",
+            "PSMNetRange",
+            "PSMNetDilation",
+            "PSMNetKPAC",
+            "PSMNetGrad",
+            "PSMNetADV",
+            "PSMNetADV4",
+            "PSMNetGrad2DADV",
+        ):
             prediction = pred_dict["pred3"]
             prediction = prediction.detach().cpu().numpy()[0, 0, 2:-2]
         elif self.model_type == "CFNet":
             prediction = pred_dict["disp_preds"][-1]
-            prediction = prediction.detach().cpu().numpy()[0, 0, 2:-2]
-        elif self.model_type == "PSMNetRange":
-            prediction = pred_dict["pred3"]
             prediction = prediction.detach().cpu().numpy()[0, 0, 2:-2]
         elif self.model_type == "PSMNetRange4":
             prediction = pred_dict["pred3"]
@@ -85,7 +126,9 @@ class ErrorMetric(object):
             prediction = cv2.resize(prediction, (960, 544), interpolation=cv2.INTER_LANCZOS4)[2:-2]
         elif self.model_type == "SMDNet":
             prediction = pred_dict["pred_disp"]
-            prediction = prediction[2:-2]
+            prediction = prediction.detach().cpu().numpy()[0, 0, 2:-2]
+        elif self.model_type == "RealSense":
+            prediction = pred_dict["depth"]
 
         disp_gt = data_batch["img_disp_l"].cpu().numpy()[0, 0, 2:-2]
         depth_gt = data_batch["img_depth_l"].cpu().numpy()[0, 0, 2:-2]
@@ -111,6 +154,8 @@ class ErrorMetric(object):
 
         disp_diff = disp_gt - disp_pred
         depth_diff = depth_gt - depth_pred
+        disp_diff = np.clip(disp_diff, -self.disp_diff_threshold, self.disp_diff_threshold)
+        depth_diff = np.clip(depth_diff, -self.depth_diff_threshold, self.depth_diff_threshold)
 
         epe = np.abs(disp_diff[mask]).mean()
         bad1 = (np.abs(disp_diff[mask]) > 1).sum() / mask.sum()
@@ -147,13 +192,37 @@ class ErrorMetric(object):
                     self.obj_disp_err[i] += np.abs(disp_diff[obj_mask]).mean()
                     self.obj_depth_err[i] += np.abs(depth_diff[obj_mask]).mean()
                     self.obj_depth_err4[i] += (np.abs(depth_diff[obj_mask]) > 4e-3).sum() / obj_mask.sum()
+
+                    if OBJECT_NAMES[i] in REAL_OBJECTS:
+                        self.real_count += 1
+                        self.real_disp_err += np.abs(disp_diff[obj_mask]).mean()
+                        self.real_depth_err += np.abs(depth_diff[obj_mask]).mean()
+                        self.real_depth_err4 += (np.abs(depth_diff[obj_mask]) > 4e-3).sum() / obj_mask.sum()
+                    else:
+                        self.print_count += 1
+                        self.print_disp_err += np.abs(disp_diff[obj_mask]).mean()
+                        self.print_depth_err += np.abs(depth_diff[obj_mask]).mean()
+                        self.print_depth_err4 += (np.abs(depth_diff[obj_mask]) > 4e-3).sum() / obj_mask.sum()
+
                     if "img_normal_l" in data_batch and "intrinsic_l" in data_batch:
                         self.obj_normal_err[i] += (normal_err[obj_mask]).mean()
                         self.obj_normal_err10[i] += (normal_err[obj_mask] > 10 / 180 * np.pi).sum() / obj_mask.sum()
+                        if OBJECT_NAMES[i] in REAL_OBJECTS:
+                            self.real_normal_err += (normal_err[obj_mask]).mean()
+                            self.real_normal_err10 += (normal_err[obj_mask] > 10 / 180 * np.pi).sum() / obj_mask.sum()
+                        else:
+                            self.print_normal_err += (normal_err[obj_mask]).mean()
+                            self.print_normal_err10 += (normal_err[obj_mask] > 10 / 180 * np.pi).sum() / obj_mask.sum()
 
         if save_folder:
             os.makedirs(save_folder, exist_ok=True)
-            plt.imsave(os.path.join(save_folder, "disp_pred.png"), disp_pred, vmin=0.0, vmax=self.max_disp, cmap="jet")
+            plt.imsave(
+                os.path.join(save_folder, "disp_pred.png"),
+                np.clip(disp_pred, 0, self.max_disp),
+                vmin=0.0,
+                vmax=self.max_disp,
+                cmap="jet",
+            )
             plt.imsave(os.path.join(save_folder, "disp_gt.png"), disp_gt, vmin=0.0, vmax=self.max_disp, cmap="jet")
             plt.imsave(
                 os.path.join(save_folder, "disp_err.png"), disp_diff - 1e5 * (1 - mask), vmin=-8, vmax=8, cmap="jet"
@@ -201,6 +270,26 @@ class ErrorMetric(object):
                     cmap="jet",
                 )
 
+            # prob cost volume
+            if self.model_type in [
+                "PSMNetRange",
+                "PSMNetDilation",
+                "PSMNetKPAC",
+                "PSMNetGrad",
+                "PSMNetADV",
+                "PSMNetADV4",
+            ]:
+                cost_volume = pred_dict["prob_volume"][0].detach().cpu().numpy()
+                save_prob_volume(cost_volume, os.path.join(save_folder, "prob_volume.pcd"))
+
+            # 2D Discriminator
+            if "d_gt" in pred_dict and "d_pred" in pred_dict:
+                d_gt = pred_dict["d_gt"][0, 0].detach().cpu().numpy()
+                d_pred = pred_dict["d_pred"][0, 0].detach().cpu().numpy()
+
+                plt.imsave(os.path.join(save_folder, "d_gt.png"), d_gt, vmin=-0.02, vmax=0.02, cmap="jet")
+                plt.imsave(os.path.join(save_folder, "d_pred.png"), d_pred, vmin=-0.02, vmax=0.02, cmap="jet")
+
         self.epe.append(epe)
         self.bad1.append(bad1)
         self.bad2.append(bad2)
@@ -229,16 +318,17 @@ class ErrorMetric(object):
         s += tabulate(table, headers=headers, tablefmt="fancy_grid", floatfmt=".4f")
 
         if self.obj_count.sum() > 0:
-            headers = ["class_id", "count", "disp_err", "depth_err", "depth_err4"]
+            headers = ["class_id", "name", "count", "disp_err", "depth_err", "depth_err4"]
             if self.normal_err:
                 headers += ["obj_norm_err", "obj_norm_err10"]
             table = []
             for i in range(self.num_classes):
                 t = [
                     i,
+                    OBJECT_NAMES[i],
                     self.obj_count[i],
                     self.obj_disp_err[i] / (self.obj_count[i] + 1e-7),
-                    self.obj_disp_err[i] / (self.obj_count[i] + 1e-7),
+                    self.obj_depth_err[i] / (self.obj_count[i] + 1e-7),
                     self.obj_depth_err4[i] / (self.obj_count[i] + 1e-7),
                 ]
                 if self.normal_err:
@@ -247,6 +337,48 @@ class ErrorMetric(object):
                         self.obj_normal_err10[i] / (self.obj_count[i] + 1e-7),
                     ]
                 table.append(t)
+            t = [
+                "-",
+                "REAL",
+                self.real_count,
+                self.real_disp_err / (self.real_count + 1e-7),
+                self.real_depth_err / (self.real_count + 1e-7),
+                self.real_depth_err4 / (self.real_count + 1e-7),
+            ]
+            if self.normal_err:
+                t += [
+                    self.real_normal_err / (self.real_count + 1e-7),
+                    self.real_normal_err10 / (self.real_count + 1e-7),
+                ]
+            table.append(t)
+            t = [
+                "-",
+                "PRINT",
+                self.print_count,
+                self.print_disp_err / (self.print_count + 1e-7),
+                self.print_depth_err / (self.print_count + 1e-7),
+                self.print_depth_err4 / (self.print_count + 1e-7),
+            ]
+            if self.normal_err:
+                t += [
+                    self.print_normal_err / (self.print_count + 1e-7),
+                    self.print_normal_err10 / (self.print_count + 1e-7),
+                ]
+            table.append(t)
+            t = [
+                "-",
+                "ALL",
+                self.print_count + self.real_count,
+                (self.print_disp_err + self.real_disp_err) / (self.print_count + self.real_count + 1e-7),
+                (self.print_depth_err + self.real_depth_err) / (self.print_count + self.real_count + 1e-7),
+                (self.print_depth_err4 + self.real_depth_err4) / (self.print_count + self.real_count + 1e-7),
+            ]
+            if self.normal_err:
+                t += [
+                    (self.print_normal_err + self.real_normal_err) / (self.print_count + self.real_count + 1e-7),
+                    (self.print_normal_err10 + self.real_normal_err10) / (self.print_count + self.real_count + 1e-7),
+                ]
+            table.append(t)
             s += "\n"
             s += tabulate(table, headers=headers, tablefmt="fancy_grid", floatfmt=".4f")
 
@@ -301,3 +433,30 @@ def compute_obj_err(disp_gt, depth_gt, disp_pred, focal_length, baseline, label,
         total_obj_depth_4_err,
         total_obj_count,
     )
+
+
+def save_prob_volume(
+    prob_volume,
+    file_path,
+    threshold=0.01,
+):
+    d, h, w = prob_volume.shape
+    custom_cmap = plt.get_cmap("jet")
+    mask = (prob_volume > threshold).reshape(-1)
+
+    color = custom_cmap(prob_volume)[..., :3].reshape(-1, 3)
+
+    coor = np.zeros((d, h, w, 3))
+    for i in range(h):
+        coor[:, i, :, 0] = i
+    for i in range(w):
+        coor[:, :, i, 1] = i
+    for i in range(d):
+        coor[i, :, :, 2] = i
+
+    coor = coor.reshape(-1, 3)
+    pcd = o3d.geometry.PointCloud()
+    pcd.points = o3d.utility.Vector3dVector(coor[mask])
+    pcd.colors = o3d.utility.Vector3dVector(color[mask])
+
+    o3d.io.write_point_cloud(file_path, pcd)

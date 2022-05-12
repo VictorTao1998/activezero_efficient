@@ -81,7 +81,7 @@ class PSMNet(nn.Module):
         super(PSMNet, self).__init__()
         self.maxdisp = maxdisp
 
-        self.init_dim = 32 + self.maxdisp//4
+        self.init_dim = 32 + self.maxdisp // 4
 
         self.feature_extraction = FeatureExtraction()
 
@@ -203,13 +203,13 @@ class PSMNet(nn.Module):
                 "pred1": pred1,
                 "pred2": pred2,
                 "pred3": pred3,
-                "cost3": torch.squeeze(smd_cost,1),
+                "cost3": torch.squeeze(smd_cost, 1),
                 "refimg_fea": refimg_feature,
             }
         else:
             pred_dict = {
                 "pred3": pred3,
-                "cost3": torch.squeeze(smd_cost,1),
+                "cost3": torch.squeeze(smd_cost, 1),
                 "refimg_fea": refimg_feature,
             }
 

@@ -1,7 +1,9 @@
+import csv
 import json
 import os
 import pickle
 import random
+from collections import OrderedDict
 
 import cv2
 import matplotlib.pyplot as plt
@@ -10,8 +12,7 @@ import sapien.core as sapien
 import transforms3d as t3d
 from path import Path
 from sapien.core import Pose
-from collections import OrderedDict
-import csv
+from data_rendering.utils.folder_paths import *
 
 MAX_DEPTH = 2.0
 
@@ -27,20 +28,10 @@ SPECULAR_MAX = 0.8
 TRANSMISSION_MIN = 0.0
 TRANSMISSION_MAX = 1.0
 
-PRIMITIVE_MIN = 5
-PRIMITIVE_MAX = 15
+PRIMITIVE_MIN = 25
+PRIMITIVE_MAX = 50
 
-TEXTURE_FOLDER = "/messytable-slow/mini-imagenet-tools/mini_imagenet/"
-TEXTURE_LIST = "/messytable-slow/mini-imagenet-tools/mini_imagenet_list.txt"
-OBJECT_DIR = "/rayc-fast/ICCV2021_Diagnosis/ocrtoc_materials/models/"
-OBJECT_CSV_PATH = "/rayc-fast/ICCV2021_Diagnosis/ocrtoc_materials/objects.csv"
-SCENE_DIR = "/rayc-fast/ICCV2021_Diagnosis/ocrtoc_materials/scenes"
 
-# TEXTURE_FOLDER = "/media/DATA/LINUX_DATA/activezero2/datasets/mini_imagenet/"
-# TEXTURE_LIST = "/media/DATA/LINUX_DATA/activezero2/datasets/mini_imagenet_list.txt"
-# OBJECT_DIR = "/home/rayu/Projects/ICCV2021_Diagnosis/ocrtoc_materials/models/"
-# OBJECT_CSV_PATH = "/home/rayu/Projects/ICCV2021_Diagnosis/ocrtoc_materials/objects.csv"
-# SCENE_DIR = "/home/rayu/Projects/ICCV2021_Diagnosis/ocrtoc_materials/scenes"
 
 
 def parse_csv(filename):
@@ -131,10 +122,34 @@ def get_obj_id_to_seg_id(seg_id_to_obj_name):
 with open(TEXTURE_LIST, "r") as f:
     texture_list = [line.strip() for line in f]
 
+with open(TEXTURE_SQ_LIST, "r") as f:
+    texture_sq_list = [line.strip() for line in f]
+
+with open(ENV_MAP_LIST, "r") as f:
+    env_list = [line.strip() for line in f]
+
 
 def get_random_texture():
     random_file = random.choice(texture_list)
     path = os.path.join(TEXTURE_FOLDER, random_file)
+    return path
+
+
+def get_random_sq_texture():
+    random_file = random.choice(texture_sq_list)
+    path = os.path.join(TEXTURE_SQ_FOLDER, random_file)
+    return path
+
+
+def get_random_env_file():
+    random_file = random.choice(env_list)
+    path = os.path.join(ENV_MAP_FOLDER, random_file)
+    return path
+
+
+def get_random_bin_texture():
+    random_file = random.choice(texture_list)
+    path = os.path.join(TEXTURE_FOLDER, random_file[:-4] + "_bin.png")
     return path
 
 
@@ -168,6 +183,28 @@ def load_table(scene, table_dir, renderer, pose=Pose()):
     kuafu_material_path = os.path.join(table_dir, "kuafu_material.json")
     obj_material = load_kuafu_material(kuafu_material_path, renderer)
     builder.add_visual_from_file(os.path.join(table_dir, "optical_table.obj"), material=obj_material)
+    table = builder.build_kinematic(name="table_kuafu")
+    table.set_pose(pose)
+
+
+def load_rand_table(scene, table_dir, renderer, pose=Pose()):
+    builder = scene.create_actor_builder()
+    kuafu_material_path = os.path.join(table_dir, "kuafu_material.json")
+    with open(kuafu_material_path, "r") as js:
+        material_dict = json.load(js)
+    # Randomize material
+    material = renderer.create_material()
+    material.base_color = [np.random.rand(), np.random.rand(), np.random.rand(), 1.0]
+    material.metallic = random.uniform(METALLIC_MIN, METALLIC_MAX)
+    material.roughness = random.uniform(ROUGHNESS_MIN, ROUGHNESS_MAX)
+    material.specular = random.uniform(SPECULAR_MIN, SPECULAR_MAX)
+    material.ior = 1 + random.random()
+    prob = random.random()
+    if prob < 0.2:
+        material.set_transmission_texture_from_file(get_random_bin_texture())
+    elif prob < 0.7:
+        material.set_diffuse_texture_from_file(get_random_texture())
+    builder.add_visual_from_file(os.path.join(table_dir, "optical_table.obj"), material=material)
     table = builder.build_kinematic(name="table_kuafu")
     table.set_pose(pose)
 
@@ -406,6 +443,66 @@ def load_random_primitives(scene, renderer, idx):
     elif 0.1 <= prob < 0.6:
         material.set_diffuse_texture_from_file(get_random_texture())
 
+    # Build
+    if type == "sphere":
+        r = 0.02 + np.random.rand() * 0.05
+        l = 0
+        builder.add_sphere_visual(radius=r, material=material)
+        builder.add_sphere_collision(radius=r)
+        s = builder.build_kinematic(name=str(idx))
+        s.set_pose(get_random_pose())
+    elif type == "capsule":
+        r = 0.02 + np.random.rand() * 0.05
+        l = 0.02 + np.random.rand() * 0.05
+        builder.add_capsule_visual(radius=r, half_length=l, material=material)
+        builder.add_capsule_collision(radius=r, half_length=l)
+        s = builder.build_kinematic(name=str(idx))
+        s.set_pose(get_random_pose())
+    elif type == "box":
+        r = 0.02 + np.random.rand() * 0.05
+        l = 0
+        builder.add_box_visual(half_size=[r, r, r], material=material)
+        builder.add_box_collision(half_size=[r, r, r])
+        s = builder.build_kinematic(name=str(idx))
+        s.set_pose(get_random_pose())
+
+    primitive_info = {
+        f"obj_{idx}": {
+            "idx": idx,
+            "type": type,
+            "material": {
+                "base_color": material.base_color,
+                "metallic": material.metallic,
+                "roughness": material.roughness,
+                "specular": material.specular,
+                "ior": material.ior,
+            },
+            "size": {"r": r, "l": l},
+            "pose": s.get_pose().to_transformation_matrix(),
+        }
+    }
+
+    return primitive_info
+
+
+def load_random_primitives_v2(scene, renderer, idx):
+    type = random.choice(["sphere", "capsule", "box"])
+
+    builder = scene.create_actor_builder()
+
+    # Randomize material
+    material = renderer.create_material()
+    material.base_color = [np.random.rand(), np.random.rand(), np.random.rand(), 1.0]
+    material.metallic = random.uniform(METALLIC_MIN, METALLIC_MAX)
+    material.roughness = random.uniform(ROUGHNESS_MIN, ROUGHNESS_MAX)
+    material.specular = random.uniform(SPECULAR_MIN, SPECULAR_MAX)
+    material.ior = 1 + random.random()
+    prob = random.random()
+    if prob < 0.2:
+        material.set_transmission_texture_from_file(get_random_bin_texture())
+    elif prob < 0.7:
+        material.set_diffuse_texture_from_file(get_random_texture())
+    #
     # Build
     if type == "sphere":
         r = 0.02 + np.random.rand() * 0.05

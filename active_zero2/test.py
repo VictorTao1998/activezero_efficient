@@ -99,6 +99,21 @@ if __name__ == "__main__":
     else:
         checkpointer.load(None, resume=True)
 
+    if args.save_file:
+        if cfg.TEST.WEIGHT:
+            model_path = weight_path
+        else:
+            model_path = checkpointer.get_checkpoint_file()
+        if model_path:
+            model_name = model_path.split("/")[-1].split(".")[0]
+            file_dir = osp.join(output_dir, model_name)
+        else:
+            file_dir = output_dir
+        if osp.isdir(file_dir):
+            logger.warning(f"File directory {file_dir} exists")
+        os.makedirs(file_dir, exist_ok=True)
+        logger.info(f"Save result visualization to {file_dir}")
+
     # Build data loader
     logger.info(f"Build dataloader")
     set_random_seed(cfg.RNG_SEED)
@@ -161,13 +176,18 @@ if __name__ == "__main__":
                     k: v.cuda(non_blocking=True) for k, v in data_batch.items() if isinstance(v, torch.Tensor)
                 }
                 data_batch["dir"] = data_dir
-                # Forward
-                if cfg.MODEL_TYPE == "SMDNet":
+                # Forward        
+                if cfg.MODEL_TYPE == "PSMNetGrad2DADV":
+                    model.test_D(data_batch, pred_dict)
+                elif cfg.MODEL_TYPE == "SMDNet":
                     pred_dict = model.predict(data_batch)
                 else:
                     pred_dict = model(data_batch)
                 metric.compute(
-                    data_batch, pred_dict, save_folder=output_dir / data_dir if args.save_file else "", real_data=False
+                    data_batch,
+                    pred_dict,
+                    save_folder=osp.join(file_dir, data_dir+"_sim") if args.save_file else "",
+                    real_data=False,
                 )
 
                 batch_time = time.time() - tic
@@ -186,7 +206,7 @@ if __name__ == "__main__":
                         ).format(
                             iter=cur_iter,
                             meters=str(test_sim_meters),
-                            memory=torch.cuda.max_memory_allocated() / (1024.0 ** 2),
+                            memory=torch.cuda.max_memory_allocated() / (1024.0**2),
                         )
                     )
 
@@ -212,8 +232,13 @@ if __name__ == "__main__":
                 data_batch["dir"] = data_dir
                 # Forward
                 pred_dict = model(data_batch)
+                if cfg.MODEL_TYPE == "PSMNetGrad2DADV":
+                    model.test_D(data_batch, pred_dict)
                 metric.compute(
-                    data_batch, pred_dict, save_folder=output_dir / data_dir if args.save_file else "", real_data=True
+                    data_batch,
+                    pred_dict,
+                    save_folder=osp.join(file_dir, data_dir+"_real") if args.save_file else "",
+                    real_data=True,
                 )
 
                 batch_time = time.time() - tic
@@ -232,7 +257,7 @@ if __name__ == "__main__":
                         ).format(
                             iter=cur_iter,
                             meters=str(test_real_meters),
-                            memory=torch.cuda.max_memory_allocated() / (1024.0 ** 2),
+                            memory=torch.cuda.max_memory_allocated() / (1024.0**2),
                         )
                     )
 
