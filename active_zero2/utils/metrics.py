@@ -3,6 +3,7 @@ import os.path as osp
 
 _ROOT_DIR = os.path.abspath(osp.join(osp.dirname(__file__), "../.."))
 
+import csv
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
@@ -14,6 +15,22 @@ from tabulate import tabulate
 
 from active_zero2.utils.geometry import cal_normal_map, depth2pts_np
 from active_zero2.models.build_model import MODEL_LIST
+
+with open(osp.join(_ROOT_DIR, "data_rendering/materials/objects.csv"), "r") as f:
+    OBJECT_INFO = csv.reader(f)
+    OBJECT_INFO = list(OBJECT_INFO)[1:]
+    OBJECT_NAMES = [_[0] for _ in OBJECT_INFO]
+
+REAL_OBJECTS = [
+    "coca_cola",
+    "coffee_cup",
+    "gold_ball",
+    "jack_daniels",
+    "spellegrino",
+    "steel_ball",
+    "tennis_ball",
+    "voss",
+]
 
 
 class ErrorMetric(object):
@@ -33,6 +50,7 @@ class ErrorMetric(object):
         self.is_depth = is_depth
         self.depth_range = depth_range
         self.num_classes = num_classes
+        assert len(OBJECT_NAMES) == num_classes
         # load real robot masks
         mask_dir = Path(_ROOT_DIR) / "active_zero2/assets/real_robot_masks"
         self.real_robot_masks = {}
@@ -65,6 +83,18 @@ class ErrorMetric(object):
         self.obj_normal_err = np.zeros(self.num_classes)
         self.obj_normal_err10 = np.zeros(self.num_classes)
         self.obj_count = np.zeros(self.num_classes)
+        self.real_disp_err = 0.0
+        self.real_depth_err = 0.0
+        self.real_depth_err4 = 0.0
+        self.real_normal_err = 0.0
+        self.real_normal_err10 = 0.0
+        self.real_count = 0
+        self.print_disp_err = 0.0
+        self.print_depth_err = 0.0
+        self.print_depth_err4 = 0.0
+        self.print_normal_err = 0.0
+        self.print_normal_err10 = 0.0
+        self.print_count = 0
 
     def compute(self, data_batch, pred_dict, save_folder="", real_data=False):
         """
@@ -162,9 +192,27 @@ class ErrorMetric(object):
                     self.obj_disp_err[i] += np.abs(disp_diff[obj_mask]).mean()
                     self.obj_depth_err[i] += np.abs(depth_diff[obj_mask]).mean()
                     self.obj_depth_err4[i] += (np.abs(depth_diff[obj_mask]) > 4e-3).sum() / obj_mask.sum()
+
+                    if OBJECT_NAMES[i] in REAL_OBJECTS:
+                        self.real_count += 1
+                        self.real_disp_err += np.abs(disp_diff[obj_mask]).mean()
+                        self.real_depth_err += np.abs(depth_diff[obj_mask]).mean()
+                        self.real_depth_err4 += (np.abs(depth_diff[obj_mask]) > 4e-3).sum() / obj_mask.sum()
+                    else:
+                        self.print_count += 1
+                        self.print_disp_err += np.abs(disp_diff[obj_mask]).mean()
+                        self.print_depth_err += np.abs(depth_diff[obj_mask]).mean()
+                        self.print_depth_err4 += (np.abs(depth_diff[obj_mask]) > 4e-3).sum() / obj_mask.sum()
+
                     if "img_normal_l" in data_batch and "intrinsic_l" in data_batch:
                         self.obj_normal_err[i] += (normal_err[obj_mask]).mean()
                         self.obj_normal_err10[i] += (normal_err[obj_mask] > 10 / 180 * np.pi).sum() / obj_mask.sum()
+                        if OBJECT_NAMES[i] in REAL_OBJECTS:
+                            self.real_normal_err += (normal_err[obj_mask]).mean()
+                            self.real_normal_err10 += (normal_err[obj_mask] > 10 / 180 * np.pi).sum() / obj_mask.sum()
+                        else:
+                            self.print_normal_err += (normal_err[obj_mask]).mean()
+                            self.print_normal_err10 += (normal_err[obj_mask] > 10 / 180 * np.pi).sum() / obj_mask.sum()
 
         if save_folder:
             os.makedirs(save_folder, exist_ok=True)
@@ -270,16 +318,17 @@ class ErrorMetric(object):
         s += tabulate(table, headers=headers, tablefmt="fancy_grid", floatfmt=".4f")
 
         if self.obj_count.sum() > 0:
-            headers = ["class_id", "count", "disp_err", "depth_err", "depth_err4"]
+            headers = ["class_id", "name", "count", "disp_err", "depth_err", "depth_err4"]
             if self.normal_err:
                 headers += ["obj_norm_err", "obj_norm_err10"]
             table = []
             for i in range(self.num_classes):
                 t = [
                     i,
+                    OBJECT_NAMES[i],
                     self.obj_count[i],
                     self.obj_disp_err[i] / (self.obj_count[i] + 1e-7),
-                    self.obj_disp_err[i] / (self.obj_count[i] + 1e-7),
+                    self.obj_depth_err[i] / (self.obj_count[i] + 1e-7),
                     self.obj_depth_err4[i] / (self.obj_count[i] + 1e-7),
                 ]
                 if self.normal_err:
@@ -288,6 +337,48 @@ class ErrorMetric(object):
                         self.obj_normal_err10[i] / (self.obj_count[i] + 1e-7),
                     ]
                 table.append(t)
+            t = [
+                "-",
+                "REAL",
+                self.real_count,
+                self.real_disp_err / (self.real_count + 1e-7),
+                self.real_depth_err / (self.real_count + 1e-7),
+                self.real_depth_err4 / (self.real_count + 1e-7),
+            ]
+            if self.normal_err:
+                t += [
+                    self.real_normal_err / (self.real_count + 1e-7),
+                    self.real_normal_err10 / (self.real_count + 1e-7),
+                ]
+            table.append(t)
+            t = [
+                "-",
+                "PRINT",
+                self.print_count,
+                self.print_disp_err / (self.print_count + 1e-7),
+                self.print_depth_err / (self.print_count + 1e-7),
+                self.print_depth_err4 / (self.print_count + 1e-7),
+            ]
+            if self.normal_err:
+                t += [
+                    self.print_normal_err / (self.print_count + 1e-7),
+                    self.print_normal_err10 / (self.print_count + 1e-7),
+                ]
+            table.append(t)
+            t = [
+                "-",
+                "ALL",
+                self.print_count + self.real_count,
+                (self.print_disp_err + self.real_disp_err) / (self.print_count + self.real_count + 1e-7),
+                (self.print_depth_err + self.real_depth_err) / (self.print_count + self.real_count + 1e-7),
+                (self.print_depth_err4 + self.real_depth_err4) / (self.print_count + self.real_count + 1e-7),
+            ]
+            if self.normal_err:
+                t += [
+                    (self.print_normal_err + self.real_normal_err) / (self.print_count + self.real_count + 1e-7),
+                    (self.print_normal_err10 + self.real_normal_err10) / (self.print_count + self.real_count + 1e-7),
+                ]
+            table.append(t)
             s += "\n"
             s += tabulate(table, headers=headers, tablefmt="fancy_grid", floatfmt=".4f")
 
