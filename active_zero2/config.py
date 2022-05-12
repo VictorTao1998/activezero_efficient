@@ -218,7 +218,6 @@ _C.SMDNet.MAX_DISP = 192
 _C.SMDNet.NO_SINE = False
 _C.SMDNet.NO_RESIDUAL = False
 
-
 # ---------------------------------------------------------------------------- #
 # Losses
 # ---------------------------------------------------------------------------- #
@@ -231,6 +230,9 @@ _C.LOSS.SIM_REPROJ.PATCH_SIZE = 11
 _C.LOSS.SIM_REPROJ.ONLY_LAST_PRED = True
 _C.LOSS.SIM_DISP = CN()
 _C.LOSS.SIM_DISP.WEIGHT = 1.0
+
+_C.LOSS.SIM_SMD = CN()
+_C.LOSS.SIM_SMD.WEIGHT = 0.0
 
 _C.LOSS.REAL_REPROJ = CN()
 _C.LOSS.REAL_REPROJ.WEIGHT = 1.0
@@ -322,7 +324,7 @@ _C.TEST.BATCH_SIZE = 1
 _C.TEST.NUM_WORKERS = 1
 # The path of weights to be tested. "@" has similar syntax as OUTPUT_DIR.
 # If not set, the last checkpoint will be used by default.
-_C.TEST.WEIGHT = ""
+_C.TEST.WEIGHT = '/edward-slow-vol/checkpoints/smd_activezero2/model_005000.pth'
 
 _C.TEST.LOG_PERIOD = 10
 _C.TEST.METRIC = ""

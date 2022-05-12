@@ -118,7 +118,7 @@ if __name__ == "__main__":
     logger.info(f"Build dataloader")
     set_random_seed(cfg.RNG_SEED)
     test_sim_dataset = build_dataset(cfg, mode="test", domain="sim")
-    test_real_dataset = build_dataset(cfg, mode="test", domain="real")
+    test_real_dataset = None # build_dataset(cfg, mode="test", domain="real")
 
     assert cfg.TEST.BATCH_SIZE == 1, "Only support cfg.TEST.BATCH_SIZE=1"
 
@@ -176,10 +176,13 @@ if __name__ == "__main__":
                     k: v.cuda(non_blocking=True) for k, v in data_batch.items() if isinstance(v, torch.Tensor)
                 }
                 data_batch["dir"] = data_dir
-                # Forward
-                pred_dict = model(data_batch)
+                # Forward        
                 if cfg.MODEL_TYPE == "PSMNetGrad2DADV":
                     model.test_D(data_batch, pred_dict)
+                elif cfg.MODEL_TYPE == "SMDNet":
+                    pred_dict = model.predict(data_batch)
+                else:
+                    pred_dict = model(data_batch)
                 metric.compute(
                     data_batch,
                     pred_dict,

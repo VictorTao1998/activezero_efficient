@@ -75,7 +75,6 @@ def get_boundaries(disp, th=1.0, dilation=10):
 
 # Utilities to load and save weights
 
-
 def load_ckp(checkpoint_path, cuda, model, optimizer):
     checkpoint = torch.load(checkpoint_path, map_location=cuda)
     model.load_state_dict(checkpoint["state_dict"])
@@ -97,7 +96,6 @@ def adjust_learning_rate(optimizer, epoch, lr, schedule, gamma):
 
 
 # Utilities to read, resize and pad images
-
 
 def gt_loader(path):
     gt = None
@@ -223,7 +221,6 @@ def resize_imgs(imgs):
 
 
 # Visualization utilities
-
 _color_map_errors = np.array(
     [
         [149, 54, 49],
@@ -283,7 +280,6 @@ _color_map_bincenters = np.array(
     ]
 )
 
-
 def color_error_image(errors, scale=1, mask=None, BGR=True):
     errors_flat = errors.flatten()
     errors_color_indices = np.clip(np.log2(errors_flat / scale + 1e-5) + 5, 0, 9)
@@ -300,14 +296,12 @@ def color_error_image(errors, scale=1, mask=None, BGR=True):
 
     return colored_errors_flat.reshape(errors.shape[0], errors.shape[1], 3).astype(np.int)
 
-
 def color_error_image_kitti(errors, scale=1, mask=None, BGR=True, dilation=1):
     errors_flat = errors.flatten()
     colored_errors_flat = np.zeros((errors_flat.shape[0], 3))
     for col in _color_map_errors_kitti:
         col_mask = np.logical_and(errors_flat >= col[0] / scale, errors_flat <= col[1] / scale)
         colored_errors_flat[col_mask] = col[2:]
-
     if mask is not None:
         colored_errors_flat[mask.flatten() == 0] = 0
 
@@ -320,7 +314,6 @@ def color_error_image_kitti(errors, scale=1, mask=None, BGR=True, dilation=1):
         kernel = np.ones((dilation, dilation), np.uint8)
         colored_errors = cv2.dilate(colored_errors, kernel, iterations=1)
     return colored_errors
-
 
 def color_depth_map(depths, scale=None):
     if scale is None:

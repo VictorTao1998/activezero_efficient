@@ -16,11 +16,9 @@ def soft_edge_error(pred, gt, radius=1):
             abs_diff.append(np.abs(shift_2d_replace(gt, i, j, 0) - pred))
     return np.minimum.reduce(abs_diff)
 
-
 def compute_bad(disp_diff, mask, th=3):
     bad_pixels = disp_diff > th
     return 100.0 * bad_pixels.sum() / mask.sum()
-
 
 def eval_disp(pred, gt, mask):
     epe = 0
@@ -45,7 +43,6 @@ def eval_edges(pred, gt, mask, th=1.0, dilation=0):
     if mask.sum() > 0:
         see_disp = soft_edge_error(pred, gt)[mask].mean()
     return see_disp
-
 
 def inference(net, cuda, height=1536, width=2048, num_samples=200000, num_out=1):
     nx = np.linspace(0, width - 1, width)
@@ -152,7 +149,6 @@ def validation(opt, net, cuda, data, num_gen_test=10, num_write_test=5, save_img
         start = time.clock()
         output = predict(net, cuda, test_data, opt.superes_factor, opt.differential_entropy)
         elapsed = time.clock() - start
-
         disp = output["pred_disp"]
         gt_disp = to_numpy(test_data["gt_disp"])
         left_img = depad_img(to_numpy(test_data["left"]), disp.shape[0], disp.shape[1])
@@ -165,7 +161,6 @@ def validation(opt, net, cuda, data, num_gen_test=10, num_write_test=5, save_img
         if gen_idx % write_freq == 0:
             preds.append(disp)
             gts.append(gt_disp)
-
             if opt.mode == "passive":
                 left_imgs.append(left_img)
             else:
