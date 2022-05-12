@@ -1,4 +1,4 @@
-OUTPUT_DIR: '/edward-slow-vol/checkpoints/smd_new/'
+OUTPUT_DIR: '/edward-slow-vol/checkpoints/smd_new_1/'
 DATA:
   TRAIN:
     SIM:
@@ -72,14 +72,17 @@ VAL:
   LOG_PERIOD: 10
 LOSS:
   SIM_DISP:
-    WEIGHT: 0.0
+    WEIGHT: 1.0
   SIM_REPROJ:
     WEIGHT: 0.0
-  SIM_SMD:
-    WEIGHT: 1.0
   REAL_REPROJ:
     WEIGHT: 0.0
+SMDNet:
+  NUM_SAMPLES: 50000
+  NO_SINE: True
+  NO_RESIDUAL: True
+    
 TEST:
   NUM_WORKERS: 0
-  MAX_DISP: 128
+  MAX_DISP: 192
   WEIGHT: "/edward-slow-vol/checkpoints/smd_activezero2/model_010000.pth"
