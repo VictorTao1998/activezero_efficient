@@ -9,6 +9,7 @@ from active_zero2.models.psmnet_range.build_model import build_model as build_ps
 from active_zero2.models.psmnet_range_4.build_model import build_model as build_psmnetrange4
 from active_zero2.models.smdnet.build_model import build_model as build_smdnet
 from active_zero2.models.psmnet_grad_2dadv.build_model import build_model as build_psmnetgrad2dadv
+from active_zero2.models.festereo.build_model import build_model as build_festereo
 
 MODEL_LIST = (
     "PSMNet",
@@ -22,6 +23,7 @@ MODEL_LIST = (
     "PSMNetADV",
     "PSMNetADV4",
     "PSMNetGrad2DADV",
+    "Festereo"
 )
 
 
